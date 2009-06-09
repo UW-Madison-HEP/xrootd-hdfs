@@ -22,7 +22,10 @@ LIBRARY  = $(LIBDIR)/libXrdHdfs.$(TYPESHLIB)
 
 TARGETS = OBJECTFILE $(LIBARCH) $(LIBRARY)
 
-HADOOP_INCLUDE = -I$(HADOOP_HOME)/src/c++/libhdfs -I$(JAVA_HOME)/include
+HADOOP_INCLUDE = -I$(HADOOP_HOME)/src/c++/libhdfs -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux
+
+HADOOP_LIB = -L$(HADOOP_HOME)/build/libhdfs -lhdfs
+
 #------------------------------------------------------------------------------#
 #                           S e a r c h   P a t h s                            #
 #------------------------------------------------------------------------------#
@@ -58,10 +61,11 @@ $(TARGETS): $(OBJECTS) $(OBJFS) $(LIBDEP)
                   ranlib $(LIBARCH); \
                fi
 	@echo Creating shared library $(LIBRARY) 
-	$(ECHO)$(CC) $(CFLAGS) $(OBJECTS) $(OBJFS) $(LDSO) $(MORELIBS) $(LIBS)  -o $(LIBRARY)
+	$(ECHO)$(CC) $(CFLAGS) $(OBJECTS) $(OBJFS) $(LDSO) $(MORELIBS) $(LIBS) $(HADOOP_LIB) -o $(LIBRARY)
 
 $(OBJDIR)/XrdHdfs.o:  XrdHdfsInterface.hh XrdHdfs.hh  XrdSecInterface.hh \
                            XrdSysError.hh     XrdOucErrInfo.hh XrdSysLogger.hh \
                            XrdHdfs.cc    XrdHdfsAio.hh  ../XrdVersion.hh
 	@echo Compiling XrdHdfs.cc 
 	$(ECHO)$(CC) -c $(CFLAGS) $(INCLUDE) $(HADOOP_INCLUDE) -o $(OBJDIR)/XrdHdfs.o XrdHdfs.cc
+

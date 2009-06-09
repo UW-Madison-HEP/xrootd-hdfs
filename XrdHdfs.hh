@@ -114,8 +114,9 @@ public:
 
                        XrdHdfsFile(char *user=0) : XrdSfsFile(user)
                                           {
+                                           const char * groups[1] = {"nobody"};
                                            fs = hdfsConnectAsUser("default", 0,
-                                              user, NULL, 0);
+                                              user, groups, 1);
                                            fh = NULL; fname = 0;
                                           }
 

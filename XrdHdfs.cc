@@ -70,7 +70,7 @@ XrdSfsFileSystem *XrdSfsGetFileSystem(XrdSfsFileSystem *native_fs,
  static XrdSysError  Eroute(lp, "XrdHdfs");
  static XrdHdfs myFS(&Eroute);
 
- Eroute.Say("Copr.  2009 University of Nebraska-Lincoln"
+ Eroute.Say("Copr.  2009 University of Nebraska-Lincoln "
                "hdfs plugin v 1.0a");
 
  return &myFS;
