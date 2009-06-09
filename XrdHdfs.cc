@@ -63,15 +63,15 @@ XrdHdfs::XrdHdfs(XrdSysError *ep)
 /******************************************************************************/
 /*                         G e t F i l e S y s t e m                          */
 /******************************************************************************/
-  
 XrdSfsFileSystem *XrdSfsGetFileSystem(XrdSfsFileSystem *native_fs, 
-                                      XrdSysLogger     *lp)
+                                       XrdSysLogger     *lp,
+                                       const char *      config)
 {
- static XrdSysError  Eroute(lp, "XrdSfs");
+ static XrdSysError  Eroute(lp, "XrdHdfs");
  static XrdHdfs myFS(&Eroute);
 
- Eroute.Say("Copr.  2007 Stanford University/SLAC "
-               "sfs (Standard File System) v 9.0n");
+ Eroute.Say("Copr.  2009 University of Nebraska-Lincoln"
+               "hdfs plugin v 1.0a");
 
  return &myFS;
 }

@@ -17,9 +17,10 @@ SOURCES = \
 OBJECTS = \
         $(OBJDIR)/XrdHdfs.o
 
-LIBRARY =
+LIBARCH  = $(LIBDIR)/libXrdHdfs.a
+LIBRARY  = $(LIBDIR)/libXrdHdfs.$(TYPESHLIB)
 
-TARGETS = OBJECTFILE
+TARGETS = OBJECTFILE $(LIBARCH) $(LIBRARY)
 
 HADOOP_INCLUDE = -I$(HADOOP_HOME)/src/c++/libhdfs -I$(JAVA_HOME)/include
 #------------------------------------------------------------------------------#
@@ -43,13 +44,21 @@ anything: $(TARGETS)
 #                           D e p e n d e n c i e s                            #
 #------------------------------------------------------------------------------#
 
-$(TARGETS): $(OBJECTS)
-#	@echo Creating archive $(LIBRARY) 
-#	@rm -f $(LIBRARY)
-#	@ar -rc $(LIBRARY) $(OBJECTS)
-#	@if [ "$(TYPE)" = "SunOS" -a "$(CC)" = "CC" ]; then \
-#	@ar -rc $(LIBRARY) $(OBJDIR)$(SUNCACHE)/*.o; \
-#fi
+$(TARGETS): $(OBJECTS) $(OBJFS) $(LIBDEP)
+	@echo Creating archive $(LIBARCH)
+	$(ECHO)rm -f $(LIBARCH)
+	$(ECHO)if [ "$(TYPE)" = "SunOS" -a "$(CC)" = "CC" ]; then \
+                  if [ "x$(SUNCACHE)" != "x" ]; then \
+                     $(CC) -xar -o $(LIBARCH) $(OBJDIR)$(SUNCACHE)/*/*.o; \
+                  else \
+                     $(CC) -xar -o $(LIBARCH) $(OBJECTS); \
+                  fi; \
+               else \
+                  ar -rc $(LIBARCH) $(OBJECTS); \
+                  ranlib $(LIBARCH); \
+               fi
+	@echo Creating shared library $(LIBRARY) 
+	$(ECHO)$(CC) $(CFLAGS) $(OBJECTS) $(OBJFS) $(LDSO) $(MORELIBS) $(LIBS)  -o $(LIBRARY)
 
 $(OBJDIR)/XrdHdfs.o:  XrdHdfsInterface.hh XrdHdfs.hh  XrdSecInterface.hh \
                            XrdSysError.hh     XrdOucErrInfo.hh XrdSysLogger.hh \
