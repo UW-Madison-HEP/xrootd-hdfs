@@ -8,7 +8,7 @@
 ## Checked in by $Author: dfeich $
 #######################################################################
 
-noinst_LTLIBRARIES = libXrdHdfs.la
+lib_LTLIBRARIES = libXrdHdfs.la
 
 xrootdsfsincdir = $(includedir)/xrootd/XrdHdfs
 
@@ -18,3 +18,4 @@ INCLUDES = -I$(top_srcdir)/src
 
 libXrdHdfs_la_SOURCES = \
          XrdHdfs.cc XrdHdfs.hh
+
