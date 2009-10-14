@@ -158,6 +158,7 @@ const   char          *getVersion();
         int            Mkdir(const char *, mode_t, int) {return -ENOTSUP;}
 
         int            Remdir(const char *) {return -ENOTSUP;}
+        int            Remdir(const char *, int) {return -ENOTSUP;}
 
         int            Rename(const char *, const char *) {return -ENOTSUP;}
 
@@ -166,6 +167,7 @@ const   char          *getVersion();
         int            Truncate(const char *, unsigned long long) {return -ENOTSUP;}
 
         int            Unlink(const char *) {return -ENOTSUP;}
+        int            Unlink(const char *, int) {return -ENOTSUP;}
 
 static  int            Emsg(const char *, XrdOucErrInfo&, int, const char *x,
                             const char *y="");
