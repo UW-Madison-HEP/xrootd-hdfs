@@ -8,13 +8,13 @@
 ## Checked in by $Author: dfeich $
 #######################################################################
 
-noinst_LTLIBRARIES = libXrdSfs.la
+noinst_LTLIBRARIES = libXrdHdfs.la
 
-xrootdsfsincdir = $(includedir)/xrootd/XrdSfs
+xrootdsfsincdir = $(includedir)/xrootd/XrdHdfs
 
-xrootdsfsinc_HEADERS = XrdSfsAio.hh  XrdSfsInterface.hh  XrdSfsNative.hh
+xrootdsfsinc_HEADERS = XrdHdfs.hh
 
 INCLUDES = -I$(top_srcdir)/src
 
-libXrdSfs_la_SOURCES = \
-         XrdSfsNative.cc XrdSfsNative.hh XrdSfsAio.hh XrdSfsInterface.hh
+libXrdHdfs_la_SOURCES = \
+         XrdHdfs.cc XrdHdfs.hh
