@@ -63,9 +63,9 @@ $(TARGETS): $(OBJECTS) $(OBJFS) $(LIBDEP)
 	@echo Creating shared library $(LIBRARY) 
 	$(ECHO)$(CC) $(CFLAGS) $(OBJECTS) $(OBJFS) $(LDSO) $(MORELIBS) $(LIBS) $(HADOOP_LIB) -o $(LIBRARY)
 
-$(OBJDIR)/XrdHdfs.o:  XrdHdfsInterface.hh XrdHdfs.hh  XrdSecInterface.hh \
+$(OBJDIR)/XrdHdfs.o:  XrdHdfs.hh  \
                            XrdSysError.hh     XrdOucErrInfo.hh XrdSysLogger.hh \
-                           XrdHdfs.cc    XrdHdfsAio.hh  ../XrdVersion.hh
+                           XrdHdfs.cc    ../XrdVersion.hh
 	@echo Compiling XrdHdfs.cc 
 	$(ECHO)$(CC) -c $(CFLAGS) $(INCLUDE) $(HADOOP_INCLUDE) -o $(OBJDIR)/XrdHdfs.o XrdHdfs.cc
 

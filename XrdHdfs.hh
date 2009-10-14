@@ -15,36 +15,34 @@
 #include <sys/types.h>
 #include <string.h>
 #include <dirent.h>
-  
-#include "XrdSfs/XrdSfsInterface.hh"
+ 
+#include "XrdOuc/XrdOucErrInfo.hh"
+ 
+#include "XrdOss/XrdOssApi.hh"
+#include "XrdSfs/XrdSfsAio.hh"
 
 #include "hdfs.h"
 
-class XrdSysError;
+class XrdSfsAio;
 class XrdSysLogger;
 
 /******************************************************************************/
 /*                 X r d H d f s D i r e c t o r y                  */
 /******************************************************************************/
   
-class XrdHdfsDirectory : public XrdSfsDirectory
+class XrdHdfsDirectory : public XrdOssDF
 {
 public:
+        XrdOucErrInfo  error;
 
-        int         open(const char              *dirName,
-                         const XrdSecClientName  *client = 0,
-                         const char              *opaque = 0);
+        int         Opendir(const char *dirName);
+        int         Readdir(char *buff, int blen);
+        int         Close(long long *retsz=0);
 
-        const char *nextEntry();
-
-        int         close();
-
-const   char       *FName() {return (const char *)fname;}
-
-                    XrdHdfsDirectory(char *user=0) : XrdSfsDirectory(user)
+                    XrdHdfsDirectory(const char *tid=0) : XrdOssDF()
                                 {
                                  const char * groups[1] = {"nobody"};
-                                 fs = hdfsConnectAsUser("default", 0, user,
+                                 fs = hdfsConnectAsUser("default", 0, tid,
                                     groups, 1);
                                  dh  = (hdfsFileInfo*)NULL;
                                  numEntries = 0;
@@ -59,6 +57,8 @@ hdfsFileInfo  *dh;  // Directory handle
 int            numEntries;
 int            dirPos;
 char          *fname;
+const char    *tident;
+int  isopen;
 
 };
 
@@ -66,53 +66,50 @@ char          *fname;
 /*                      X r d H d f s F i l e                       */
 /******************************************************************************/
   
-class XrdHdfsFile : public XrdSfsFile
+class XrdHdfsFile : public XrdOssDF
 {
 public:
 
-        int            open(const char                *fileName,
-                                  XrdSfsFileOpenMode   openMode,
+        XrdOucErrInfo  error;
+
+        int            Open(const char                *fileName,
+                                  int                  openMode,
                                   mode_t               createMode,
-                            const XrdSecClientName    *client = 0,
-                            const char                *opaque = 0);
+                                  XrdOucEnv           &client);
 
-        int            close();
+        int            Close(long long *retsz=0);
 
-        int            fctl(const int               cmd,
-                            const char             *args,
-                                  XrdOucErrInfo    &out_error);
+        int            Fstat(struct stat *);
 
-        const char    *FName() {return fname;}
+        int            Fsync() {return -ENOTSUP;}
 
-        int            getMmap(void **Addr, off_t &Size)
-                              {if (Addr) Addr = 0; Size = 0; return SFS_OK;}
+        int            Fsync(XrdSfsAio *a) {return -ENOTSUP;}
 
-        int            read(XrdSfsFileOffset   fileOffset,
-                            XrdSfsXferSize     preread_sz) {return SFS_OK;}
+        off_t          getMmap(void **Addr)
+                              {*Addr = 0; return 0;}
 
-        XrdSfsXferSize read(XrdSfsFileOffset   fileOffset,
-                            char              *buffer,
-                            XrdSfsXferSize     buffer_size);
+        ssize_t        Read(off_t               fileOffset,
+                            size_t              preread_sz) {return XrdOssOK;}
 
-        int            read(XrdSfsAio *aioparm);
+        ssize_t        Read(void               *buffer,
+                            off_t               fileOffset,
+                            size_t              buffer_size);
 
-        XrdSfsXferSize write(XrdSfsFileOffset   fileOffset,
-                             const char        *buffer,
-                             XrdSfsXferSize     buffer_size);
+        int            Read(XrdSfsAio *aioparm);
 
-        int            write(XrdSfsAio *aioparm);
+        ssize_t        ReadRaw(void            *buffer,
+                            off_t               fileOffset,
+                            size_t              buffer_size) {return Read(buffer, fileOffset, buffer_size);}
 
-        int            sync();
+        ssize_t        Write(const char        *buffer,
+                             off_t              fileOffset,
+                             size_t             buffer_size);
 
-        int            sync(XrdSfsAio *aiop);
+        int            Write(XrdSfsAio *aioparm);
 
-        int            stat(struct stat *buf);
+        int            Ftruncate(unsigned long long) {return -ENOTSUP;}
 
-        int            truncate(XrdSfsFileOffset   fileOffset);
-
-        int            getCXinfo(char cxtype[4], int &cxrsz) {return cxrsz = 0;}
-
-                       XrdHdfsFile(char *user=0) : XrdSfsFile(user)
+                       XrdHdfsFile(const char *user=0) : XrdOssDF()
                                           {
                                            const char * groups[1] = {"nobody"};
                                            fs = hdfsConnectAsUser("default", 0,
@@ -133,105 +130,48 @@ char *fname; // File Name
 /*                          X r d H d f s                           */
 /******************************************************************************/
   
-class XrdHdfs : public XrdSfsFileSystem
+class XrdHdfsSys : public XrdOss
 {
 public:
+        XrdOucErrInfo  error;
 
 // Object Allocation Functions
 //
-        XrdSfsDirectory *newDir(char *user=0)
-                        {return (XrdSfsDirectory *)new XrdHdfsDirectory(user);}
+        XrdOssDF        *newDir(const char *user=0)
+                        {return (XrdHdfsDirectory *)new XrdHdfsDirectory(user);}
 
-        XrdSfsFile      *newFile(char *user=0)
-                        {return      (XrdSfsFile *)new XrdHdfsFile(user);}
+        XrdOssDF        *newFile(const char *user=0)
+                        {return      (XrdHdfsFile *)new XrdHdfsFile(user);}
 
 // Other Functions
 //
-        int            chmod(const char             *Name,
-                                   XrdSfsMode        Mode,
-                                   XrdOucErrInfo    &out_error,
-                             const XrdSecClientName *client = 0,
-                             const char             *opaque = 0);
+        int            Chmod(const char *, mode_t) {return -ENOTSUP;}
 
-        int            exists(const char                *fileName,
-                                    XrdSfsFileExistence &exists_flag,
-                                    XrdOucErrInfo       &out_error,
-                              const XrdSecClientName    *client = 0,
-                              const char                *opaque = 0);
+        int            Create(const char *, const char *, mode_t, XrdOucEnv &, int opts=0) {return -ENOTSUP;}
 
-        int            fsctl(const int               cmd,
-                             const char             *args,
-                                   XrdOucErrInfo    &out_error,
-                             const XrdSecClientName *client = 0);
+        int            Init(XrdSysLogger *, const char *) {return 0;}
 
         int            getStats(char *buff, int blen) {return 0;}
 
 const   char          *getVersion();
 
-        int            mkdir(const char             *dirName,
-                                   XrdSfsMode        Mode,
-                                   XrdOucErrInfo    &out_error,
-                             const XrdSecClientName *client = 0,
-                             const char             *opaque = 0);
+        int            Mkdir(const char *, mode_t, int) {return -ENOTSUP;}
 
-        int            prepare(      XrdSfsPrep       &pargs,
-                                     XrdOucErrInfo    &out_error,
-                               const XrdSecClientName *client = 0) {return 0;}
+        int            Remdir(const char *) {return -ENOTSUP;}
 
-        int            rem(const char             *path,
-                                 XrdOucErrInfo    &out_error,
-                           const XrdSecClientName *client = 0,
-                           const char             *opaque = 0);
+        int            Rename(const char *, const char *) {return -ENOTSUP;}
 
-        int            remdir(const char             *dirName,
-                                    XrdOucErrInfo    &out_error,
-                              const XrdSecClientName *client = 0,
-                              const char             *opaque = 0);
+        int            Stat(const char *, struct stat *, int resonly=0);
 
-        int            rename(const char             *oldFileName,
-                              const char             *newFileName,
-                                    XrdOucErrInfo    &out_error,
-                              const XrdSecClientName *client = 0,
-                              const char             *opaqueO = 0,
-                              const char             *opaqueN = 0);
+        int            Truncate(const char *, unsigned long long) {return -ENOTSUP;}
 
-        int            stat(const char             *Name,
-                                  struct stat      *buf,
-                                  XrdOucErrInfo    &out_error,
-                            const XrdSecClientName *client = 0,
-                            const char             *opaque = 0);
-
-        int            stat(const char             *Name,
-                                  mode_t           &mode,
-                                  XrdOucErrInfo    &out_error,
-                            const XrdSecClientName *client = 0,
-                            const char             *opaque = 0)
-                       {struct stat bfr;
-                        int rc = stat(Name, &bfr, out_error, client);
-                        if (!rc) mode = bfr.st_mode;
-                        return rc;
-                       }
-
-        int            truncate(const char             *Name,
-                                      XrdSfsFileOffset fileOffset,
-                                      XrdOucErrInfo    &out_error,
-                                const XrdSecEntity     *client = 0,
-                                const char             *opaque = 0);
-
-// Common functions
-//
-static  int            Mkpath(const char *path, mode_t mode, 
-                              const char *info=0);
+        int            Unlink(const char *) {return -ENOTSUP;}
 
 static  int            Emsg(const char *, XrdOucErrInfo&, int, const char *x,
                             const char *y="");
 
-                       XrdHdfs(XrdSysError *lp);
-virtual               ~XrdHdfs() {}
-
-private:
-
-static XrdSysError *eDest;
+XrdHdfsSys() : XrdOss() {}
+virtual ~XrdHdfsSys() {}
 
 };
 #endif
