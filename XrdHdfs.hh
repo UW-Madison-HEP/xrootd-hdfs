@@ -47,6 +47,7 @@ public:
                                  dh  = (hdfsFileInfo*)NULL;
                                  numEntries = 0;
                                  dirPos = 0;
+                                 isopen = 0;
                                 }
 
                    ~XrdHdfsDirectory() {if (dh != NULL && numEntries > 0) hdfsFreeFileInfo(dh, numEntries);}

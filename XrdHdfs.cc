@@ -61,6 +61,7 @@ static XrdHdfsSys XrdHdfsSS;
 
 }
 
+using namespace std;
 using namespace XrdHdfs;
 
 /******************************************************************************/
@@ -147,13 +148,15 @@ int XrdHdfsDirectory::Readdir(char * buff, int blen)
 //
   if (!dh)  {
      XrdHdfsSys::Emsg(epname,error,EBADF,"read directory",fname);
-     return 0;
+     return -EBADF;
   }
 
 // Check if we are at EOF (once there we stay there)
 //
-   if (dirPos == numEntries-1)
+   if (dirPos == numEntries-1) {
+     *buff = '\0';
      return 0;
+   }
 
 // Read the next directory entry
 //
@@ -162,7 +165,9 @@ int XrdHdfsDirectory::Readdir(char * buff, int blen)
 
 // Return the actual entry
 //
-   strlcpy(buff, (const char *)(fileInfo.mName), blen);
+   std::string full_name = fileInfo.mName;
+   full_name.erase(0, full_name.rfind("/"));
+   strlcpy(buff, full_name.c_str(), blen);
    return XrdOssOK;
 }
 
