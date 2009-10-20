@@ -272,20 +272,18 @@ int XrdHdfsFile::Open(const char               *path,      // In
 
    int err_code = 0;
 
-   if ((fh = hdfsOpenFile(fs, path, open_flag, 0, 0, 0)) == NULL)
-      {
+   if ((fh = hdfsOpenFile(fs, path, open_flag, 0, 0, 0)) == NULL) {
        err_code = errno;
-       if (errno == EEXIST)
-          {
-           hdfsFileInfo * fileInfo = hdfsGetPathInfo(fs, path);
-           if (fileInfo != NULL) {
-               if (fileInfo->mKind == kObjectKindDirectory) {
+       hdfsFileInfo * fileInfo = hdfsGetPathInfo(fs, path);
+       if (fileInfo != NULL) {
+           if (fileInfo->mKind == kObjectKindDirectory) {
                    err_code = EISDIR;
-               }
-               hdfsFreeFileInfo(fileInfo, 1);
            }
-          }
-      }
+           hdfsFreeFileInfo(fileInfo, 1);
+       } else { 
+           err_code = EEXIST;
+       }
+   }
 
 // All done.
 //
