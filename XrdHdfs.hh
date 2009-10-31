@@ -17,6 +17,7 @@
 #include <dirent.h>
  
 #include "XrdOuc/XrdOucErrInfo.hh"
+#include "XrdOuc/XrdOucName2Name.hh"
  
 #include "XrdOss/XrdOssApi.hh"
 #include "XrdSfs/XrdSfsAio.hh"
@@ -26,6 +27,7 @@
 class XrdSfsAio;
 class XrdSysLogger;
 
+#define XrdHdfsMAX_PATH_LEN 1024
 /******************************************************************************/
 /*                 X r d H d f s D i r e c t o r y                  */
 /******************************************************************************/
@@ -150,7 +152,7 @@ public:
 
         int            Create(const char *, const char *, mode_t, XrdOucEnv &, int opts=0) {return -ENOTSUP;}
 
-        int            Init(XrdSysLogger *, const char *) {return 0;}
+        int            Init(XrdSysLogger *, const char *);
 
         int            getStats(char *buff, int blen) {return 0;}
 
@@ -187,6 +189,8 @@ int    ConfigN2N(XrdSysError &Eroute);
 int    ConfigProc(XrdSysError &Eroute);
 int    ConfigXeq(char *, XrdOucStream &, XrdSysError &);
 int    xnml(XrdOucStream &Config, XrdSysError &Eroute);
+
+static XrdSysError *eDest;
 
 };
 #endif

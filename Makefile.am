@@ -17,7 +17,7 @@ xrootdsfsinc_HEADERS = XrdHdfs.hh
 INCLUDES = -I$(top_srcdir)/src
 
 libXrdHdfs_la_SOURCES = \
-         XrdHdfs.cc XrdHdfs.hh
+         XrdHdfs.cc XrdHdfsConfig.cc XrdHdfs.hh
 
 libXrdHdfs_la_LDFLAGS = -lhdfs
 

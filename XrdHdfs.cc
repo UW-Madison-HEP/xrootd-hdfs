@@ -102,13 +102,14 @@ int XrdHdfsDirectory::Opendir(const char              *dir_path)
 
 // Set up values for this directory object
 //
-   if (XrdHdfsSS->the_N2N) {
-       char actual_path[XrdOssMAX_PATH_LEN+1];
-       if ((retc = XrdHdfsSS->the_N2N->lfn2pfn(dir_path, actual_path, sizeof(actual_path))))
+   if (XrdHdfsSS.the_N2N) {
+       char actual_path[XrdHdfsMAX_PATH_LEN+1];
+       if ((retc = (XrdHdfsSS.the_N2N)->lfn2pfn(dir_path, actual_path, sizeof(actual_path))))
           return retc;
           else fname = strdup(actual_path);
+   } else {
+       fname = strdup(dir_path);
    }
-   fname = strdup(dir_path);
    dirPos = 0;
 
 // Open the directory and get it's id
@@ -252,13 +253,14 @@ int XrdHdfsFile::Open(const char               *path,      // In
       return -XRDOSS_E8003;
 
    int retc;
-   if (XrdHdfsSS->the_N2N) {
-       char actual_path[XrdOssMAX_PATH_LEN+1];
-       if ((retc = XrdHdfsSS->the_N2N->lfn2pfn(dir_path, actual_path, sizeof(actual_path))))
+   if (XrdHdfsSS.the_N2N) {
+       char actual_path[XrdHdfsMAX_PATH_LEN+1];
+       if ((retc = (XrdHdfsSS.the_N2N)->lfn2pfn(path, actual_path, sizeof(actual_path))))
           return retc;
           else fname = strdup(actual_path);
+   } else {
+       fname = strdup(path);
    }
-   fname = strdup(path);
 
 // Set the actual open mode
 //
@@ -504,13 +506,14 @@ int XrdHdfsSys::Init(XrdSysLogger *lp, const char *configfn)
 
 // Do the herald thing
 //
-   eDest.logger(lp);
-   eDest.Say("Copr. 2009, Brian Bockelman, Hdfs Version " XrdHdfsSVNID);
+   eDest = &OssEroute;
+   eDest->logger(lp);
+   eDest->Say("Copr. 2009, Brian Bockelman, Hdfs Version ");
 
 // Initialize the subsystems
 //
    tmp = ((NoGo=Configure(configfn)) ? "failed." : "completed.");
-   eDest.Say("------ HDFS storage system initialization ", tmp);
+   eDest->Say("------ HDFS storage system initialization ", tmp);
 
 // All done.
 //
