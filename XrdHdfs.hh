@@ -128,7 +128,7 @@ char *fname; // File Name
 };
 
 /******************************************************************************/
-/*                          X r d H d f s                           */
+/*                          X r d H d f s S y s                               */
 /******************************************************************************/
   
 class XrdHdfsSys : public XrdOss
@@ -173,8 +173,20 @@ const   char          *getVersion();
 static  int            Emsg(const char *, XrdOucErrInfo&, int, const char *x,
                             const char *y="");
 
+char             *N2N_Lib;   // -> Name2Name Library Path
+char             *N2N_Parms; // -> Name2Name Object Parameters
+XrdOucName2Name  *the_N2N;   // -> File mapper object
+
 XrdHdfsSys() : XrdOss() {}
 virtual ~XrdHdfsSys() {}
+
+private:
+
+int    Configure(const char *);
+int    ConfigN2N(XrdSysError &Eroute);
+int    ConfigProc(XrdSysError &Eroute);
+int    ConfigXeq(char *, XrdOucStream &, XrdSysError &);
+int    xnml(XrdOucStream &Config, XrdSysError &Eroute);
 
 };
 #endif

@@ -8,9 +8,7 @@
 /*               DE-AC03-76-SFO0515 with the Deprtment of Energy              */
 /******************************************************************************/
 
-//          $Id: XrdHdfs.cc,v 1.20 2008/06/09 10:44:30 ganis Exp $
-
-const char *XrdHdfsCVSID = "$Id: XrdHdfs.cc,v 1.20 2008/06/09 10:44:30 ganis Exp $";
+const char *XrdHdfsSVNID = "$Id$";
 
 #include <sys/types.h>
 #include <unistd.h>
@@ -97,12 +95,19 @@ int XrdHdfsDirectory::Opendir(const char              *dir_path)
 #ifndef NODEBUG
    static const char *epname = "Opendir";
 #endif
+   int retc;
 
 // Return an error if we have already opened
    if (isopen) return -XRDOSS_E8001;
 
 // Set up values for this directory object
 //
+   if (XrdHdfsSS->the_N2N) {
+       char actual_path[XrdOssMAX_PATH_LEN+1];
+       if ((retc = XrdHdfsSS->the_N2N->lfn2pfn(dir_path, actual_path, sizeof(actual_path))))
+          return retc;
+          else fname = strdup(actual_path);
+   }
    fname = strdup(dir_path);
    dirPos = 0;
 
@@ -245,6 +250,14 @@ int XrdHdfsFile::Open(const char               *path,      // In
 //
    if (fh != NULL)
       return -XRDOSS_E8003;
+
+   int retc;
+   if (XrdHdfsSS->the_N2N) {
+       char actual_path[XrdOssMAX_PATH_LEN+1];
+       if ((retc = XrdHdfsSS->the_N2N->lfn2pfn(dir_path, actual_path, sizeof(actual_path))))
+          return retc;
+          else fname = strdup(actual_path);
+   }
    fname = strdup(path);
 
 // Set the actual open mode
@@ -472,7 +485,38 @@ int XrdHdfsFile::Fstat(struct stat     *buf)         // Out
 /******************************************************************************/
 /*         F i l e   S y s t e m   O b j e c t   I n t e r f a c e s          */
 /******************************************************************************/
-  
+ 
+/******************************************************************************/
+/*                                  I n i t                                   */
+/******************************************************************************/
+
+/*
+  Function: Initialize HDFS system.
+
+  Input:    None
+
+  Output:   Returns zero upon success otherwise (-errno).
+*/
+int XrdHdfsSys::Init(XrdSysLogger *lp, const char *configfn)
+{
+   int NoGo;
+   const char *tmp;
+
+// Do the herald thing
+//
+   eDest.logger(lp);
+   eDest.Say("Copr. 2009, Brian Bockelman, Hdfs Version " XrdHdfsSVNID);
+
+// Initialize the subsystems
+//
+   tmp = ((NoGo=Configure(configfn)) ? "failed." : "completed.");
+   eDest.Say("------ HDFS storage system initialization ", tmp);
+
+// All done.
+//
+   return NoGo;
+}
+ 
 /******************************************************************************/
 /*                            g e t V e r s i o n                             */
 /******************************************************************************/
