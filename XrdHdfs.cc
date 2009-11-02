@@ -114,8 +114,8 @@ int XrdHdfsDirectory::Opendir(const char              *dir_path)
 
 // Open the directory and get it's id
 //
-   TRACE(Opendir, "path " << dir_path);
-   if (!(dh = hdfsListDirectory(fs, dir_path, &numEntries))) {
+   TRACE(Opendir, "path " << fname);
+   if (!(dh = hdfsListDirectory(fs, fname, &numEntries))) {
       isopen = 0;
       if (errno == 0)
          return -1;
@@ -262,6 +262,8 @@ int XrdHdfsFile::Open(const char               *path,      // In
        fname = strdup(path);
    }
 
+   (XrdHdfsSS.eDest)->Say("File we will access: ", fname);
+
 // Set the actual open mode
 //
    switch(openMode & (O_RDONLY | O_WRONLY | O_RDWR))
@@ -292,16 +294,16 @@ int XrdHdfsFile::Open(const char               *path,      // In
 
    int err_code = 0;
 
-   if ((fh = hdfsOpenFile(fs, path, open_flag, 0, 0, 0)) == NULL) {
+   if ((fh = hdfsOpenFile(fs, fname, open_flag, 0, 0, 0)) == NULL) {
        err_code = errno;
-       hdfsFileInfo * fileInfo = hdfsGetPathInfo(fs, path);
+       hdfsFileInfo * fileInfo = hdfsGetPathInfo(fs, fname);
        if (fileInfo != NULL) {
            if (fileInfo->mKind == kObjectKindDirectory) {
                    err_code = EISDIR;
            }
            hdfsFreeFileInfo(fileInfo, 1);
        } else { 
-           err_code = EEXIST;
+           err_code = ENOENT;
        }
    }
 
@@ -509,11 +511,15 @@ int XrdHdfsSys::Init(XrdSysLogger *lp, const char *configfn)
    eDest = &OssEroute;
    eDest->logger(lp);
    eDest->Say("Copr. 2009, Brian Bockelman, Hdfs Version ");
+   eDest->Emsg("Config", "Copr. 2009, Brian Bockelman, Hdfs Version ");
 
 // Initialize the subsystems
 //
+   N2N_Lib=NULL;
+   the_N2N=NULL;
    tmp = ((NoGo=Configure(configfn)) ? "failed." : "completed.");
    eDest->Say("------ HDFS storage system initialization ", tmp);
+   eDest->Emsg("HDFS storage system initialization.", tmp);
 
 // All done.
 //

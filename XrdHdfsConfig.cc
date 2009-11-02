@@ -19,6 +19,7 @@ const char *XrdHdfsConfigCVSID = "$Id$";
 #include <sys/stat.h>
 
 #include "XrdVersion.hh"
+#include "XrdOuc/XrdOucEnv.hh"
 #include "XrdSys/XrdSysError.hh"
 #include "XrdSys/XrdSysHeaders.hh"
 #include "XrdSys/XrdSysLogger.hh"
@@ -26,13 +27,13 @@ const char *XrdHdfsConfigCVSID = "$Id$";
 #include "XrdSys/XrdSysPthread.hh"
 #include "XrdSec/XrdSecInterface.hh"
 #include "XrdCmsTfc/XrdCmsTfc.hh"
-#include "XrdOss/XrdOssTrace.hh"
+#include "XrdHdfs/XrdHdfs.hh"
 
 /******************************************************************************/
 /*                               d e f i n e s                                */
 /******************************************************************************/
 
-#define TS_Xeq(x,m)    if (!strcmp(x,var)) return m(Config, Eroute);
+#define TS_Xeq(x,m)    if (!strcmp(x,var)) return m(Config);
 
 /******************************************************************************/
 /*                             C o n f i g u r e                              */
@@ -49,8 +50,10 @@ int XrdHdfsSys::Configure(const char *cfn)
 */
    int NoGo = 0;
 
-   N2N_Lib = "";
+   N2N_Lib = NULL;
    the_N2N = NULL;
+
+   eDest->Emsg("Config", "Configuring HDFS.");
 
 // Process the configuration file
 //
@@ -70,21 +73,23 @@ int XrdHdfsSys::ConfigProc(const char *Cfn)
   char *var;
   int  cfgFD, retc, NoGo = 0;
   XrdOucEnv myEnv;
-  XrdOucStream Config(&eDest, getenv("XRDINSTANCE"), &myEnv, "=====> ");
+  XrdOucStream Config(eDest, getenv("XRDINSTANCE"), &myEnv, "=====> ");
 
 // Make sure we have a config file
 //
    if (!Cfn || !*Cfn)
-      {eDest.Emsg("Config", "Configuration file not specified.");
+      {eDest->Emsg("Config", "Configuration file not specified.");
        return 1;
       }
 
 // Try to open the configuration file.
 //
    if ( (cfgFD = open(Cfn, O_RDONLY, 0)) < 0)
-      {eDest.Emsg("Config", errno, "open config file", Cfn);
+      {eDest->Emsg("Config", errno, "open config file", Cfn);
        return 1;
       }
+   ConfigFN = Cfn;
+
    Config.Attach(cfgFD);
 
 // Now start reading records until eof.
@@ -96,12 +101,12 @@ int XrdHdfsSys::ConfigProc(const char *Cfn)
 
 // All done scanning the file, set dependent parameters.
 //
-   if (N2N_Lib) NoGo |= ConfigN2N(Eroute);
+   if (N2N_Lib) NoGo |= ConfigN2N();
 
 // Now check if any errors occured during file i/o
 //
    if ((retc = Config.LastError()))
-      NoGo = eDest.Emsg("Config", retc, "read config file", Cfn);
+      NoGo = eDest->Emsg("Config", retc, "read config file", Cfn);
    Config.Close();
 
 // Return final return code
@@ -118,12 +123,13 @@ int XrdHdfsSys::ConfigXeq(char *var, XrdOucStream &Config)
 
    // Process items. for either a local or a remote configuration
    //
+
    TS_Xeq("namelib",       xnml);
 
    // No match found, complain.
    //
-   eDest.Say("Config warning: ignoring unknown directive '",var,"'.");
-   Config.Echo();
+   //eDest->Say("Config warning: ignoring unknown directive '",var,"'.");
+   //Config.Echo();
    return 0;
 }
 
@@ -131,7 +137,7 @@ int XrdHdfsSys::ConfigXeq(char *var, XrdOucStream &Config)
 /*                             C o n f i g N 2 N                              */
 /******************************************************************************/
 
-int XrdHdfsSys::ConfigN2N(XrdSysError &Eroute)
+int XrdHdfsSys::ConfigN2N()
 {
    XrdSysPlugin    *myLib;
    XrdOucName2Name *(*ep)(XrdOucgetName2NameArgs);
@@ -139,7 +145,7 @@ int XrdHdfsSys::ConfigN2N(XrdSysError &Eroute)
 // Create a plugin object (we will throw this away without deletion because
 // the library must stay open but we never want to reference it again).
 //
-   if (!(myLib = new XrdSysPlugin(&Eroute, N2N_Lib))) return 1;
+   if (!(myLib = new XrdSysPlugin(eDest, N2N_Lib))) return 1;
 
 // Now get the entry point of the object creator
 //
@@ -149,10 +155,10 @@ int XrdHdfsSys::ConfigN2N(XrdSysError &Eroute)
 
 // Get the Object now
 //
-   the_N2N = ep(&Eroute, ConfigFN,
+   the_N2N = ep(eDest, ConfigFN,
                 (N2N_Parms ? N2N_Parms : ""),
-                LocalRoot, RemoteRoot);
-   return lcl_N2N == 0;
+                NULL, NULL);
+   return the_N2N == 0;
 }
 
 
@@ -170,14 +176,14 @@ int XrdHdfsSys::ConfigN2N(XrdSysError &Eroute)
   Output: 0 upon success or !0 upon failure.
 */
 
-int XrdHdfsSys::xnml(XrdOucStream &Config, XrdSysError &Eroute)
+int XrdHdfsSys::xnml(XrdOucStream &Config)
 {
     char *val, parms[1024];
 
 // Get the path
 //
    if (!(val = Config.GetWord()) || !val[0])
-      {Eroute.Emsg("Config", "namelib not specified"); return 1;}
+      {eDest->Emsg("Config", "namelib not specified"); return 1;}
 
 // Record the path
 //
@@ -187,7 +193,7 @@ int XrdHdfsSys::xnml(XrdOucStream &Config, XrdSysError &Eroute)
 // Record any parms
 //
    if (!Config.GetRest(parms, sizeof(parms)))
-      {Eroute.Emsg("Config", "namelib parameters too long"); return 1;}
+      {eDest->Emsg("Config", "namelib parameters too long"); return 1;}
    if (N2N_Parms) free(N2N_Parms);
    N2N_Parms = (*parms ? strdup(parms) : 0);
    return 0;

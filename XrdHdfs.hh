@@ -178,6 +178,8 @@ static  int            Emsg(const char *, XrdOucErrInfo&, int, const char *x,
 char             *N2N_Lib;   // -> Name2Name Library Path
 char             *N2N_Parms; // -> Name2Name Object Parameters
 XrdOucName2Name  *the_N2N;   // -> File mapper object
+const char       *ConfigFN;  // Pointer to the configuration filename
+XrdSysError      *eDest;
 
 XrdHdfsSys() : XrdOss() {}
 virtual ~XrdHdfsSys() {}
@@ -185,12 +187,11 @@ virtual ~XrdHdfsSys() {}
 private:
 
 int    Configure(const char *);
-int    ConfigN2N(XrdSysError &Eroute);
-int    ConfigProc(XrdSysError &Eroute);
-int    ConfigXeq(char *, XrdOucStream &, XrdSysError &);
-int    xnml(XrdOucStream &Config, XrdSysError &Eroute);
+int    ConfigN2N();
+int    ConfigProc(const char *);
+int    ConfigXeq(char *, XrdOucStream &);
+int    xnml(XrdOucStream &Config);
 
-static XrdSysError *eDest;
 
 };
 #endif
