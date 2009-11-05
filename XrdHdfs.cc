@@ -104,8 +104,10 @@ int XrdHdfsDirectory::Opendir(const char              *dir_path)
 //
    if (XrdHdfsSS.the_N2N) {
        char actual_path[XrdHdfsMAX_PATH_LEN+1];
-       if ((retc = (XrdHdfsSS.the_N2N)->lfn2pfn(dir_path, actual_path, sizeof(actual_path))))
-          return retc;
+       if ((retc = (XrdHdfsSS.the_N2N)->lfn2pfn(dir_path, actual_path, sizeof(actual_path)))) {
+          (XrdHdfsSS.eDest)->Say("Cannot find a N2N mapping for ", dir_path, "; using path directly.");
+          fname = strdup(dir_path);
+       }
           else fname = strdup(actual_path);
    } else {
        fname = strdup(dir_path);
@@ -255,9 +257,11 @@ int XrdHdfsFile::Open(const char               *path,      // In
    int retc;
    if (XrdHdfsSS.the_N2N) {
        char actual_path[XrdHdfsMAX_PATH_LEN+1];
-       if ((retc = (XrdHdfsSS.the_N2N)->lfn2pfn(path, actual_path, sizeof(actual_path))))
-          return retc;
-          else fname = strdup(actual_path);
+       if ((retc = (XrdHdfsSS.the_N2N)->lfn2pfn(path, actual_path, sizeof(actual_path)))) {
+          (XrdHdfsSS.eDest)->Say("Cannot find a N2N mapping for ", path, "; using path directly.");
+          fname = strdup(path);
+       }
+       else fname = strdup(actual_path);
    } else {
        fname = strdup(path);
    }
