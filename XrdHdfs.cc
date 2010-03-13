@@ -563,7 +563,7 @@ int XrdHdfsSys::Stat(const char              *path,        // In
    if (XrdHdfsSS.the_N2N) {
        char actual_path[XrdHdfsMAX_PATH_LEN+1];
        if ((XrdHdfsSS.the_N2N)->lfn2pfn(path, actual_path, sizeof(actual_path))) {
-          (XrdHdfsSS.eDest)->Say("Cannot find a N2N mapping for ", dir_path, "; using path directly.");
+          (XrdHdfsSS.eDest)->Say("Cannot find a N2N mapping for ", path, "; using path directly.");
           fname = strdup(path);
        } else {
           fname = strdup(fname);
