@@ -468,7 +468,7 @@ int XrdHdfsFile::Fstat(struct stat     *buf)         // Out
 // Execute the function
 //
    if (fileInfo == NULL)
-      return XrdHdfsSys::Emsg(epname, error, errno, "state", fname);
+      return XrdHdfsSys::Emsg(epname, error, errno, "stat", fname);
 
    buf->st_mode = (fileInfo->mKind == kObjectKindDirectory) ? (S_IFDIR | 0777):\
       (S_IFREG | 0666);
@@ -566,7 +566,7 @@ int XrdHdfsSys::Stat(const char              *path,        // In
           (XrdHdfsSS.eDest)->Say("Cannot find a N2N mapping for ", path, "; using path directly.");
           fname = strdup(path);
        } else {
-          fname = strdup(fname);
+          fname = strdup(actual_path);
        }
    } else {
        fname = strdup(path);
@@ -581,7 +581,7 @@ int XrdHdfsSys::Stat(const char              *path,        // In
    if (fileInfo == NULL) {
       if (fname)
          free(fname);
-      return XrdHdfsSys::Emsg(epname, error, errno, "state", fname);
+      return XrdHdfsSys::Emsg(epname, error, errno, "stat", fname);
    }
 
    buf->st_mode = (fileInfo->mKind == kObjectKindDirectory) ? (S_IFDIR | 0777):\
