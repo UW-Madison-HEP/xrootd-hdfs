@@ -557,14 +557,32 @@ int XrdHdfsSys::Stat(const char              *path,        // In
 {
    static const char *epname = "stat";
    const char * groups[1] = {"nobody"};
+
+   char * fname;
+
+   if (XrdHdfsSS.the_N2N) {
+       char actual_path[XrdHdfsMAX_PATH_LEN+1];
+       if ((XrdHdfsSS.the_N2N)->lfn2pfn(path, actual_path, sizeof(actual_path))) {
+          (XrdHdfsSS.eDest)->Say("Cannot find a N2N mapping for ", dir_path, "; using path directly.");
+          fname = strdup(path);
+       } else {
+          fname = strdup(fname);
+       }
+   } else {
+       fname = strdup(path);
+   }
+
    hdfsFS fs = hdfsConnectAsUser("default", 0, "nobody", groups, 1);
 
-   hdfsFileInfo * fileInfo = hdfsGetPathInfo(fs, path);
+   hdfsFileInfo * fileInfo = hdfsGetPathInfo(fs, fname);
 
 // Execute the function
 //
-   if (fileInfo == NULL)
-      return XrdHdfsSys::Emsg(epname, error, errno, "state", path);
+   if (fileInfo == NULL) {
+      if (fname)
+         free(fname);
+      return XrdHdfsSys::Emsg(epname, error, errno, "state", fname);
+   }
 
    buf->st_mode = (fileInfo->mKind == kObjectKindDirectory) ? (S_IFDIR | 0777):\
       (S_IFREG | 0666);
@@ -583,6 +601,8 @@ int XrdHdfsSys::Stat(const char              *path,        // In
 
 // All went well
 //
+   if (fname)
+      free(fname);
    return XrdOssOK;
 }
 
