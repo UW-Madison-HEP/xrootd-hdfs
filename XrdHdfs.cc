@@ -579,9 +579,10 @@ int XrdHdfsSys::Stat(const char              *path,        // In
 // Execute the function
 //
    if (fileInfo == NULL) {
+      int retc = XrdHdfsSys::Emsg(epname, error, errno, "stat", fname);
       if (fname)
          free(fname);
-      return XrdHdfsSys::Emsg(epname, error, errno, "stat", fname);
+      return retc;
    }
 
    buf->st_mode = (fileInfo->mKind == kObjectKindDirectory) ? (S_IFDIR | 0777):\
