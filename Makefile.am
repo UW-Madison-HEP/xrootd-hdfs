@@ -12,12 +12,14 @@ lib_LTLIBRARIES = libXrdHdfs.la
 
 xrootdsfsincdir = $(includedir)/xrootd/XrdHdfs
 
-xrootdsfsinc_HEADERS = XrdHdfs.hh
+xrootdsfsinc_HEADERS = src/XrdHdfs.hh
 
 INCLUDES = -I$(top_srcdir)/src
 
 libXrdHdfs_la_SOURCES = \
-         XrdHdfs.cc XrdHdfsConfig.cc XrdHdfs.hh
+         src/XrdHdfs.cc src/XrdHdfsConfig.cc src/XrdHdfs.hh
 
 libXrdHdfs_la_LDFLAGS = -lhdfs
+
+EXTRA_DIST = spec/xrootd-hdfs.spec
 

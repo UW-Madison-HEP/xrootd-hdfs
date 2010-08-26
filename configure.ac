@@ -33,6 +33,10 @@ AC_ARG_WITH(jvm-libdir,
             [  --with-jvm-libdir=PATH         directory path to libjvm.so library],
             JVM_LIBDIR=-L$withval)
 AC_SUBST(JVM_LIBDIR)
+AC_ARG_WITH(jvm-incdir,
+            [  --with-jvm-incdir=PATH        directory path to jni.h header file],
+            [JVM_INCDIR="-I$withval -I$withval/linux"])
+AC_SUBST(JVM_INCDIR)
 
 # determines shared library needed for loading modules
 AC_LIBTOOL_DLOPEN
@@ -48,8 +52,9 @@ AC_CHECK_LIB([hdfs],[hdfsExists],[:],
             )
 LDFLAGS=$LDFLAGS_BUP
 
-INCLUDES="$HDFS_INCDIR $XROOTD_INCDIR $INCLUDES"
+CXXFLAGS="$HDFS_INCDIR $XROOTD_INCDIR $JVM_INCDIR $INCLUDES"
 AC_CHECK_HEADER([hdfs.h])
+AC_CHECK_HEADER([jni.h])
 
 CXXFLAGS="$CXXFLAGS -D_REENTRANT -D_FILE_OFFSET_BITS=64"
 
