@@ -26,7 +26,6 @@ const char *XrdHdfsConfigCVSID = "$Id$";
 #include "XrdSys/XrdSysPlugin.hh"
 #include "XrdSys/XrdSysPthread.hh"
 #include "XrdSec/XrdSecInterface.hh"
-#include "XrdCmsTfc/XrdCmsTfc.hh"
 #include "XrdHdfs/XrdHdfs.hh"
 
 /******************************************************************************/

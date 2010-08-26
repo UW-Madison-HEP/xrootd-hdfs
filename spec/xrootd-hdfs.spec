@@ -21,15 +21,15 @@ Requires: xrootd hadoop-fuse
 
 %build
 LDFLAGS="-L/usr/java/default/jre/lib/amd64 -L/usr/java/default/jre/lib/amd64/server -L/usr/java/default/jre/lib/i386/server -L/usr/java/default/jre/lib/i386"
-%configure --with-xrootd-incdir=/usr/include/xrootd
+%configure --with-xrootd-incdir=/usr/include/xrootd --with-jvm-incdir=/usr/java/default/include --with-jvm-libdir=/usr/java/default/jre/lib/amd64/server
 make
 
 %install
 rm -rf $RPM_BUILD_ROOT
 %makeinstall
 
-sed -e "s#@LIBDIR@#%{_libdir}#" %{SOURCE2} > $RPM_BUILD_ROOT%{_sysconfdir}/%{name}
-/xrootd.sample.hdfs.cfg
+mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/xrootd
+sed -e "s#@LIBDIR@#%{_libdir}#" %{SOURCE1} > $RPM_BUILD_ROOT%{_sysconfdir}/xrootd/xrootd.sample.hdfs.cfg
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -38,9 +38,12 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %{_libdir}/libXrdHdfs*
 %{_includedir}/xrootd/XrdHdfs/XrdHdfs.hh
-%{_sysconfdir}/%{name}/xrootd.sample.dcap.cfg
+%{_sysconfdir}/xrootd/xrootd.sample.hdfs.cfg
 
 %changelog
+* Thu Aug 26 2010 Brian Bockelman <bbockelm@cse.unl.edu> 1.4.0-2
+- Add in the sample configuration file.
+
 * Tue Aug 24 2010 Brian Bockelman <bbockelm@cse.unl.edu> 1.4.0-1
 - Break xrootd-hdfs off into its own standalone RPM.
 
