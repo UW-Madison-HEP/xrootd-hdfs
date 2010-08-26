@@ -1,0 +1,55 @@
+# Port specifications; only the redirector needs to use a well-known port
+# "any" will cause rooted to bind to any available port.  Change as needed for firewalls.
+xrd.port 1094
+
+# The roles this server will play.
+all.role server
+all.role manager if xrootd.unl.edu
+# The known managers
+all.manager xrootd.unl.edu:1213
+#all.manager xrootd.ultralight.org:1213
+
+# Allow any path to be exported; this is further refined in the authfile.
+all.export /
+
+# Hosts allowed to use this xrootd cluster
+cms.allow host *
+
+### Standard directives
+# Simple sites probably don't need to touch these.
+# Logging verbosity
+xrootd.trace emsg login stall redirect
+ofs.trace none
+xrd.trace conn
+cms.trace all
+
+# Integrate with CMS TFC, placed in /etc/storage.xml
+#oss.namelib @LIBDIR@/libXrdCmsTfc.so file:/etc/xrootd/storage.xml?protocol=hadoop
+
+# Turn on authorization
+ofs.authorize 1
+acc.authdb /etc/xrootd/Authfile
+acc.audit deny grant
+
+# Security configuration
+sec.protocol @LIBDIR@ gsi -certdir:/etc/grid-security/certificates -cert:/etc/grid-security/xrd/xrdcert.pem -key:/etc/grid-security/xrd/xrdkey.pem -crl:3
+
+xrootd.seclib @LIBDIR@/libXrdSec.so
+xrootd.fslib @LIBDIR@/libXrdOfs.so
+ofs.osslib @LIBDIR@/libXrdHdfs.so
+all.adminpath /var/run/xrootd
+all.pidpath /var/run/xrootd
+
+cms.delay startup 10
+cms.fxhold 60s
+cms.perf int 30s pgm /usr/bin/XrdOlbMonPerf 30
+
+if exec xrootd
+  xrd.report xrootd.unl.edu:3333 every 300s all
+  xrootd.monitor all flush 5s mbuff 1k window 1s dest files io info user xrootd.unl.edu:3334 dest files io info stage user brian-test.unl.edu:9930
+fi
+
+#oss.xfr 
+oss.space default_stage /opt/xrootd_cache
+
+
