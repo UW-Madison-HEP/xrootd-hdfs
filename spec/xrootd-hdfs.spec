@@ -10,8 +10,8 @@ URL: svn://t2.unl.edu/brian/XrdHdfs
 Source0: %{name}-%{version}.tar.gz
 Source1: xrootd.sample.hdfs.cfg.in
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
-BuildRequires: xrootd-devel > 1.4 hadoop-fuse-devel
-Requires: xrootd > 1.4 hadoop-fuse
+BuildRequires: xrootd-devel >= 1.4 hadoop-fuse-devel
+Requires: xrootd >= 1.4 hadoop-fuse
 
 %description
 %{summary}
