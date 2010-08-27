@@ -29,8 +29,8 @@ const char *XrdHdfsSVNID = "$Id$";
 #include "XrdSys/XrdSysPlugin.hh"
 #include "XrdSys/XrdSysPthread.hh"
 #include "XrdSec/XrdSecInterface.hh"
-#include "XrdHdfs/XrdHdfs.hh"
 #include "XrdOss/XrdOssTrace.hh"
+#include "XrdHdfs.hh"
 
 #ifdef AIX
 #include <sys/mode.h>
