@@ -1,7 +1,7 @@
 
 Name: xrootd-hdfs
-Version: 1.4.0
-Release: 3
+Version: 1.4.2
+Release: 1
 Summary: HDFS plugin for xrootd
 
 Group: System Environment/Daemons
@@ -26,10 +26,12 @@ make
 
 %install
 rm -rf $RPM_BUILD_ROOT
-%makeinstall
+make install DESTDIR=$RPM_BUILD_ROOT
 
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/xrootd
 sed -e "s#@LIBDIR@#%{_libdir}#" %{SOURCE1} > $RPM_BUILD_ROOT%{_sysconfdir}/xrootd/xrootd.sample.hdfs.cfg
+rm -rf $RPM_BUILD_ROOT%{_libdir}/*.a
+rm -rf $RPM_BUILD_ROOT%{_libdir}/*.la
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -41,6 +43,13 @@ rm -rf $RPM_BUILD_ROOT
 %{_sysconfdir}/xrootd/xrootd.sample.hdfs.cfg
 
 %changelog
+* Tue Nov 9 2010 Brian Bockelman <bbockelm@cse.unl.edu> 1.4.2-1
+- Rebuild for updated xrootd.
+- Remove libtool archive and static library.  Fix usage of makeinstall macro.
+
+* Fri Sep 24 2010 Brian Bockelman <bbockelm@cse.unl.edu> 1.4.1-1
+- Version bump in order to compile against latest xrootd.
+
 * Thu Aug 26 2010 Brian Bockelman <bbockelm@cse.unl.edu> 1.4.0-2
 - Add in the sample configuration file.
 
