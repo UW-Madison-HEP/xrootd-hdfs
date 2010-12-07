@@ -161,7 +161,7 @@ int XrdHdfsDirectory::Readdir(char * buff, int blen)
 
 // Check if we are at EOF (once there we stay there)
 //
-   if (dirPos == numEntries-1) {
+   if (dirPos == numEntries) {
      *buff = '\0';
      return 0;
    }

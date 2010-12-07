@@ -1,6 +1,6 @@
 
 Name: xrootd-hdfs
-Version: 1.4.2
+Version: 1.4.3
 Release: 1
 Summary: HDFS plugin for xrootd
 
@@ -43,6 +43,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_sysconfdir}/xrootd/xrootd.sample.hdfs.cfg
 
 %changelog
+* Mon Dec 6 2010 Brian Bockelman <bbockelm@cse.unl.edu> 1.4.3-1
+- Update to fix an off-by-one error in the directory listing.
+
 * Tue Nov 9 2010 Brian Bockelman <bbockelm@cse.unl.edu> 1.4.2-1
 - Rebuild for updated xrootd.
 - Remove libtool archive and static library.  Fix usage of makeinstall macro.
