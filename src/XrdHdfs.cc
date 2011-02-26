@@ -210,6 +210,19 @@ int XrdHdfsDirectory::Close(long long *retsz)
    return 0;
 }
 
+XrdHdfsDirectory::~XrdHdfsDirectory()
+{
+  if (fs != NULL && dh != NULL && numEntries > 0) {
+    hdfsFreeFileInfo(dh, numEntries);
+  }
+  if (fs != NULL) {
+    hdfsDisconnect(fs);
+  }
+  if (fname) {
+    free(fname);
+  }
+}
+
 /******************************************************************************/
 /*                F i l e   O b j e c t   I n t e r f a c e s                 */
 /******************************************************************************/
@@ -336,13 +349,28 @@ int XrdHdfsFile::Close(long long int *)
 
 // Release the handle and return
 //
-    if (fh != NULL  && hdfsCloseFile(fs, fh) != 0)
-       return XrdHdfsSys::Emsg(epname, error, errno, "close", fname);
-    fh = NULL;
-    if (fname) {free(fname); fname = 0;}
-    return XrdOssOK;
+   int ret = XrdOssOK;
+   if (fh != NULL  && hdfsCloseFile(fs, fh) != 0) {
+      ret = XrdHdfsSys::Emsg(epname, error, errno, "close", fname);
+   }
+   fh = NULL;
+   if (fs != NULL && hdfsDisconnect(fs) != 0) {
+      ret = XrdHdfsSys::Emsg(epname, error, errno, "close", fname); 
+   }
+   fs = NULL;
+   if (fname) {
+      free(fname);
+      fname = 0;
+   }
+   return ret;
 }
 
+XrdHdfsFile::~XrdHdfsFile()
+{
+   if (fs && fh) {hdfsCloseFile(fs, fh);}
+   if (fs) {hdfsDisconnect(fs);}
+   if (fname) {free(fname);}
+}
   
 /******************************************************************************/
 /*                                  R e a d                                   */
@@ -556,9 +584,9 @@ int XrdHdfsSys::Stat(const char              *path,        // In
 */
 {
    static const char *epname = "stat";
-   const char * groups[1] = {"nobody"};
-
+   int retc = XrdOssOK;
    char * fname;
+   hdfsFileInfo * fileInfo = NULL;
 
    if (XrdHdfsSS.the_N2N) {
        char actual_path[XrdHdfsMAX_PATH_LEN+1];
@@ -572,17 +600,17 @@ int XrdHdfsSys::Stat(const char              *path,        // In
        fname = strdup(path);
    }
 
-   hdfsFS fs = hdfsConnectAsUser("default", 0, "nobody", groups, 1);
+   hdfsFS fs = hdfsConnectAsUserNewInstance("default", 0, "nobody");
+   if (fs == NULL)
+      goto cleanup;
 
-   hdfsFileInfo * fileInfo = hdfsGetPathInfo(fs, fname);
+   fileInfo = hdfsGetPathInfo(fs, fname);
 
 // Execute the function
 //
    if (fileInfo == NULL) {
-      int retc = XrdHdfsSys::Emsg(epname, error, errno, "stat", fname);
-      if (fname)
-         free(fname);
-      return retc;
+      retc = XrdHdfsSys::Emsg(epname, error, errno, "stat", fname);
+      goto cleanup;
    }
 
    buf->st_mode = (fileInfo->mKind == kObjectKindDirectory) ? (S_IFDIR | 0777):\
@@ -602,9 +630,12 @@ int XrdHdfsSys::Stat(const char              *path,        // In
 
 // All went well
 //
+cleanup:
+   if (fs)
+      hdfsDisconnect(fs);
    if (fname)
       free(fname);
-   return XrdOssOK;
+   return retc;
 }
 
 

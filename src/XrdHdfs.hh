@@ -43,16 +43,14 @@ public:
 
                     XrdHdfsDirectory(const char *tid=0) : XrdOssDF()
                                 {
-                                 const char * groups[1] = {"nobody"};
-                                 fs = hdfsConnectAsUser("default", 0, tid,
-                                    groups, 1);
+                                 fs = hdfsConnectAsUserNewInstance("default", 0, "nobody");
                                  dh  = (hdfsFileInfo*)NULL;
                                  numEntries = 0;
                                  dirPos = 0;
                                  isopen = 0;
                                 }
 
-                   ~XrdHdfsDirectory() {if (dh != NULL && numEntries > 0) hdfsFreeFileInfo(dh, numEntries);}
+                   ~XrdHdfsDirectory();
 private:
 
 hdfsFS        fs;
@@ -114,13 +112,13 @@ public:
 
                        XrdHdfsFile(const char *user=0) : XrdOssDF()
                                           {
-                                           const char * groups[1] = {"nobody"};
-                                           fs = hdfsConnectAsUser("default", 0,
-                                              user, groups, 1);
+                                           fs = hdfsConnectAsUserNewInstance("default", 0,
+                                             "nobody");
                                            fh = NULL; fname = 0;
                                           }
 
-                      ~XrdHdfsFile() {if (fh) {hdfsCloseFile(fs, fh); fh=NULL;}}
+                       ~XrdHdfsFile();
+
 private:
 
 hdfsFS   fs; // File system object.
