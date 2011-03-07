@@ -327,7 +327,7 @@ int XrdHdfsFile::Open(const char               *path,      // In
 // All done.
 //
    if (err_code != 0)
-       return -err_code;
+       return (err_code > 0) ? -err_code : err_code;
 
    return XrdOssOK;
 }
@@ -601,8 +601,10 @@ int XrdHdfsSys::Stat(const char              *path,        // In
    }
 
    hdfsFS fs = hdfsConnectAsUserNewInstance("default", 0, "nobody");
-   if (fs == NULL)
+   if (fs == NULL) {
+      retc = XrdHdfsSys::Emsg(epname, error, EIO, "stat", fname);
       goto cleanup;
+   }
 
    fileInfo = hdfsGetPathInfo(fs, fname);
 
@@ -672,6 +674,6 @@ int XrdHdfsSys::Emsg(const char    *pfx,    // Message prefix value
     einfo.setErrInfo(ecode, buffer);
 
     if (errno != 0)
-       return -errno;
+       return (errno > 0) ? -errno : errno;
     return -1;
 }

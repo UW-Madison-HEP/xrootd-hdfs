@@ -1,7 +1,7 @@
 
 Name: xrootd-hdfs
-Version: 1.4.5
-Release: 2
+Version: 1.4.6
+Release: 1
 Summary: HDFS plugin for xrootd
 
 Group: System Environment/Daemons
@@ -42,6 +42,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_sysconfdir}/xrootd/xrootd.sample.hdfs.cfg
 
 %changelog
+* Mon Mar  7 2011 Brian Bockelman <bbockelm@cse.unl.edu> 1.4.6-1
+- Review to make sure all return values are non-positive.
+
 * Fri Feb 25 2011 Brian Bockelman <bbockelm@cse.unl.edu> 1.4.5-2
 - Fix a double-close of the filesystem.
 

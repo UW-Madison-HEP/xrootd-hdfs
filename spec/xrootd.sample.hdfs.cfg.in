@@ -10,7 +10,7 @@ all.manager xrootd.unl.edu:1213
 #all.manager xrootd.ultralight.org:1213
 
 # Allow any path to be exported; this is further refined in the authfile.
-all.export /
+all.export / nostage
 
 # Hosts allowed to use this xrootd cluster
 cms.allow host *

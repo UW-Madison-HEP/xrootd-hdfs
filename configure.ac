@@ -1,6 +1,6 @@
 
 AC_PREREQ(2.57)
-AC_INIT(xrootd-hdfs,1.4.5,xrootd-demonstrator@opensciencegrid.org)
+AC_INIT(xrootd-hdfs,1.4.6,xrootd-demonstrator@opensciencegrid.org)
 AC_CONFIG_SRCDIR([src/XrdHdfs.hh])
 
 AC_PROG_CXX
