@@ -8,7 +8,10 @@
 ## Checked in by $Author: dfeich $
 #######################################################################
 
-lib_LTLIBRARIES = libXrdHdfs.la
+bin_PROGRAMS = xrootd_hdfs_envcheck
+xrootd_hdfs_envcheck_SOURCES = src/XrdHdfsEnvCheck.cc
+
+lib_LTLIBRARIES = libXrdHdfs.la libXrdHdfsReal.la
 
 xrootdsfsincdir = $(includedir)/xrootd/XrdHdfs
 
@@ -16,10 +19,13 @@ xrootdsfsinc_HEADERS = src/XrdHdfs.hh
 
 INCLUDES = -I$(top_srcdir)/src
 
-libXrdHdfs_la_SOURCES = \
+libXrdHdfsReal_la_SOURCES = \
          src/XrdHdfs.cc src/XrdHdfsConfig.cc src/XrdHdfs.hh
 
-libXrdHdfs_la_LDFLAGS = -lhdfs
+libXrdHdfsReal_la_LDFLAGS = -lhdfs
+
+libXrdHdfs_la_SOURCES = \
+         src/XrdHdfsBootstrap.cc
 
 EXTRA_DIST = spec/xrootd-hdfs.spec spec/xrootd.sample.hdfs.cfg.in spec/xrootd-hdfs.sysconfig
 

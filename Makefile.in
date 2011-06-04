@@ -18,6 +18,7 @@
 #######################################################################
 
 
+
 srcdir = @srcdir@
 top_srcdir = @top_srcdir@
 VPATH = @srcdir@
@@ -40,6 +41,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
+bin_PROGRAMS = xrootd_hdfs_envcheck$(EXEEXT)
 DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(top_srcdir)/configure \
 	$(xrootdsfsinc_HEADERS) AUTHORS COPYING ChangeLog INSTALL NEWS \
@@ -59,12 +61,21 @@ am__vpath_adj = case $$p in \
     *) f=$$p;; \
   esac;
 am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
-am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(xrootdsfsincdir)"
+am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)" \
+	"$(DESTDIR)$(xrootdsfsincdir)"
 libLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(lib_LTLIBRARIES)
 libXrdHdfs_la_LIBADD =
-am_libXrdHdfs_la_OBJECTS = XrdHdfs.lo XrdHdfsConfig.lo
+am_libXrdHdfs_la_OBJECTS = XrdHdfsBootstrap.lo
 libXrdHdfs_la_OBJECTS = $(am_libXrdHdfs_la_OBJECTS)
+libXrdHdfsReal_la_LIBADD =
+am_libXrdHdfsReal_la_OBJECTS = XrdHdfs.lo XrdHdfsConfig.lo
+libXrdHdfsReal_la_OBJECTS = $(am_libXrdHdfsReal_la_OBJECTS)
+binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
+PROGRAMS = $(bin_PROGRAMS)
+am_xrootd_hdfs_envcheck_OBJECTS = XrdHdfsEnvCheck.$(OBJEXT)
+xrootd_hdfs_envcheck_OBJECTS = $(am_xrootd_hdfs_envcheck_OBJECTS)
+xrootd_hdfs_envcheck_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I. -I$(srcdir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -84,8 +95,10 @@ LTCOMPILE = $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) \
 CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(libXrdHdfs_la_SOURCES)
-DIST_SOURCES = $(libXrdHdfs_la_SOURCES)
+SOURCES = $(libXrdHdfs_la_SOURCES) $(libXrdHdfsReal_la_SOURCES) \
+	$(xrootd_hdfs_envcheck_SOURCES)
+DIST_SOURCES = $(libXrdHdfs_la_SOURCES) $(libXrdHdfsReal_la_SOURCES) \
+	$(xrootd_hdfs_envcheck_SOURCES)
 xrootdsfsincHEADERS_INSTALL = $(INSTALL_HEADER)
 HEADERS = $(xrootdsfsinc_HEADERS)
 ETAGS = etags
@@ -209,14 +222,18 @@ sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
-lib_LTLIBRARIES = libXrdHdfs.la
+xrootd_hdfs_envcheck_SOURCES = src/XrdHdfsEnvCheck.cc
+lib_LTLIBRARIES = libXrdHdfs.la libXrdHdfsReal.la
 xrootdsfsincdir = $(includedir)/xrootd/XrdHdfs
 xrootdsfsinc_HEADERS = src/XrdHdfs.hh
 INCLUDES = -I$(top_srcdir)/src
-libXrdHdfs_la_SOURCES = \
+libXrdHdfsReal_la_SOURCES = \
          src/XrdHdfs.cc src/XrdHdfsConfig.cc src/XrdHdfs.hh
 
-libXrdHdfs_la_LDFLAGS = -lhdfs
+libXrdHdfsReal_la_LDFLAGS = -lhdfs
+libXrdHdfs_la_SOURCES = \
+         src/XrdHdfsBootstrap.cc
+
 EXTRA_DIST = spec/xrootd-hdfs.spec spec/xrootd.sample.hdfs.cfg.in spec/xrootd-hdfs.sysconfig
 all: all-am
 
@@ -284,6 +301,39 @@ clean-libLTLIBRARIES:
 	done
 libXrdHdfs.la: $(libXrdHdfs_la_OBJECTS) $(libXrdHdfs_la_DEPENDENCIES) 
 	$(CXXLINK) -rpath $(libdir) $(libXrdHdfs_la_LDFLAGS) $(libXrdHdfs_la_OBJECTS) $(libXrdHdfs_la_LIBADD) $(LIBS)
+libXrdHdfsReal.la: $(libXrdHdfsReal_la_OBJECTS) $(libXrdHdfsReal_la_DEPENDENCIES) 
+	$(CXXLINK) -rpath $(libdir) $(libXrdHdfsReal_la_LDFLAGS) $(libXrdHdfsReal_la_OBJECTS) $(libXrdHdfsReal_la_LIBADD) $(LIBS)
+install-binPROGRAMS: $(bin_PROGRAMS)
+	@$(NORMAL_INSTALL)
+	test -z "$(bindir)" || $(mkdir_p) "$(DESTDIR)$(bindir)"
+	@list='$(bin_PROGRAMS)'; for p in $$list; do \
+	  p1=`echo $$p|sed 's/$(EXEEXT)$$//'`; \
+	  if test -f $$p \
+	     || test -f $$p1 \
+	  ; then \
+	    f=`echo "$$p1" | sed 's,^.*/,,;$(transform);s/$$/$(EXEEXT)/'`; \
+	   echo " $(INSTALL_PROGRAM_ENV) $(LIBTOOL) --mode=install $(binPROGRAMS_INSTALL) '$$p' '$(DESTDIR)$(bindir)/$$f'"; \
+	   $(INSTALL_PROGRAM_ENV) $(LIBTOOL) --mode=install $(binPROGRAMS_INSTALL) "$$p" "$(DESTDIR)$(bindir)/$$f" || exit 1; \
+	  else :; fi; \
+	done
+
+uninstall-binPROGRAMS:
+	@$(NORMAL_UNINSTALL)
+	@list='$(bin_PROGRAMS)'; for p in $$list; do \
+	  f=`echo "$$p" | sed 's,^.*/,,;s/$(EXEEXT)$$//;$(transform);s/$$/$(EXEEXT)/'`; \
+	  echo " rm -f '$(DESTDIR)$(bindir)/$$f'"; \
+	  rm -f "$(DESTDIR)$(bindir)/$$f"; \
+	done
+
+clean-binPROGRAMS:
+	@list='$(bin_PROGRAMS)'; for p in $$list; do \
+	  f=`echo $$p|sed 's/$(EXEEXT)$$//'`; \
+	  echo " rm -f $$p $$f"; \
+	  rm -f $$p $$f ; \
+	done
+xrootd_hdfs_envcheck$(EXEEXT): $(xrootd_hdfs_envcheck_OBJECTS) $(xrootd_hdfs_envcheck_DEPENDENCIES) 
+	@rm -f xrootd_hdfs_envcheck$(EXEEXT)
+	$(CXXLINK) $(xrootd_hdfs_envcheck_LDFLAGS) $(xrootd_hdfs_envcheck_OBJECTS) $(xrootd_hdfs_envcheck_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -292,7 +342,9 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/XrdHdfs.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/XrdHdfsBootstrap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/XrdHdfsConfig.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/XrdHdfsEnvCheck.Po@am__quote@
 
 .cc.o:
 @am__fastdepCXX_TRUE@	if $(CXXCOMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
@@ -315,6 +367,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
 
+XrdHdfsBootstrap.lo: src/XrdHdfsBootstrap.cc
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT XrdHdfsBootstrap.lo -MD -MP -MF "$(DEPDIR)/XrdHdfsBootstrap.Tpo" -c -o XrdHdfsBootstrap.lo `test -f 'src/XrdHdfsBootstrap.cc' || echo '$(srcdir)/'`src/XrdHdfsBootstrap.cc; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/XrdHdfsBootstrap.Tpo" "$(DEPDIR)/XrdHdfsBootstrap.Plo"; else rm -f "$(DEPDIR)/XrdHdfsBootstrap.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/XrdHdfsBootstrap.cc' object='XrdHdfsBootstrap.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o XrdHdfsBootstrap.lo `test -f 'src/XrdHdfsBootstrap.cc' || echo '$(srcdir)/'`src/XrdHdfsBootstrap.cc
+
 XrdHdfs.lo: src/XrdHdfs.cc
 @am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT XrdHdfs.lo -MD -MP -MF "$(DEPDIR)/XrdHdfs.Tpo" -c -o XrdHdfs.lo `test -f 'src/XrdHdfs.cc' || echo '$(srcdir)/'`src/XrdHdfs.cc; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/XrdHdfs.Tpo" "$(DEPDIR)/XrdHdfs.Plo"; else rm -f "$(DEPDIR)/XrdHdfs.Tpo"; exit 1; fi
@@ -328,6 +387,20 @@ XrdHdfsConfig.lo: src/XrdHdfsConfig.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/XrdHdfsConfig.cc' object='XrdHdfsConfig.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o XrdHdfsConfig.lo `test -f 'src/XrdHdfsConfig.cc' || echo '$(srcdir)/'`src/XrdHdfsConfig.cc
+
+XrdHdfsEnvCheck.o: src/XrdHdfsEnvCheck.cc
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT XrdHdfsEnvCheck.o -MD -MP -MF "$(DEPDIR)/XrdHdfsEnvCheck.Tpo" -c -o XrdHdfsEnvCheck.o `test -f 'src/XrdHdfsEnvCheck.cc' || echo '$(srcdir)/'`src/XrdHdfsEnvCheck.cc; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/XrdHdfsEnvCheck.Tpo" "$(DEPDIR)/XrdHdfsEnvCheck.Po"; else rm -f "$(DEPDIR)/XrdHdfsEnvCheck.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/XrdHdfsEnvCheck.cc' object='XrdHdfsEnvCheck.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o XrdHdfsEnvCheck.o `test -f 'src/XrdHdfsEnvCheck.cc' || echo '$(srcdir)/'`src/XrdHdfsEnvCheck.cc
+
+XrdHdfsEnvCheck.obj: src/XrdHdfsEnvCheck.cc
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT XrdHdfsEnvCheck.obj -MD -MP -MF "$(DEPDIR)/XrdHdfsEnvCheck.Tpo" -c -o XrdHdfsEnvCheck.obj `if test -f 'src/XrdHdfsEnvCheck.cc'; then $(CYGPATH_W) 'src/XrdHdfsEnvCheck.cc'; else $(CYGPATH_W) '$(srcdir)/src/XrdHdfsEnvCheck.cc'; fi`; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/XrdHdfsEnvCheck.Tpo" "$(DEPDIR)/XrdHdfsEnvCheck.Po"; else rm -f "$(DEPDIR)/XrdHdfsEnvCheck.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/XrdHdfsEnvCheck.cc' object='XrdHdfsEnvCheck.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o XrdHdfsEnvCheck.obj `if test -f 'src/XrdHdfsEnvCheck.cc'; then $(CYGPATH_W) 'src/XrdHdfsEnvCheck.cc'; else $(CYGPATH_W) '$(srcdir)/src/XrdHdfsEnvCheck.cc'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -533,9 +606,11 @@ distcleancheck: distclean
 	       exit 1; } >&2
 check-am: all-am
 check: check-am
-all-am: Makefile $(LTLIBRARIES) $(HEADERS)
+all-am: Makefile $(LTLIBRARIES) $(PROGRAMS) $(HEADERS)
+install-binPROGRAMS: install-libLTLIBRARIES
+
 installdirs:
-	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(xrootdsfsincdir)"; do \
+	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(xrootdsfsincdir)"; do \
 	  test -z "$$dir" || $(mkdir_p) "$$dir"; \
 	done
 install: install-am
@@ -564,8 +639,8 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-generic clean-libLTLIBRARIES clean-libtool \
-	mostlyclean-am
+clean-am: clean-binPROGRAMS clean-generic clean-libLTLIBRARIES \
+	clean-libtool mostlyclean-am
 
 distclean: distclean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
@@ -586,7 +661,7 @@ info-am:
 
 install-data-am: install-xrootdsfsincHEADERS
 
-install-exec-am: install-libLTLIBRARIES
+install-exec-am: install-binPROGRAMS install-libLTLIBRARIES
 
 install-info: install-info-am
 
@@ -614,24 +689,25 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-info-am uninstall-libLTLIBRARIES \
-	uninstall-xrootdsfsincHEADERS
+uninstall-am: uninstall-binPROGRAMS uninstall-info-am \
+	uninstall-libLTLIBRARIES uninstall-xrootdsfsincHEADERS
 
 .PHONY: CTAGS GTAGS all all-am am--refresh check check-am clean \
-	clean-generic clean-libLTLIBRARIES clean-libtool ctags dist \
-	dist-all dist-bzip2 dist-gzip dist-shar dist-tarZ dist-zip \
-	distcheck distclean distclean-compile distclean-generic \
-	distclean-libtool distclean-tags distcleancheck distdir \
-	distuninstallcheck dvi dvi-am html html-am info info-am \
-	install install-am install-data install-data-am install-exec \
+	clean-binPROGRAMS clean-generic clean-libLTLIBRARIES \
+	clean-libtool ctags dist dist-all dist-bzip2 dist-gzip \
+	dist-shar dist-tarZ dist-zip distcheck distclean \
+	distclean-compile distclean-generic distclean-libtool \
+	distclean-tags distcleancheck distdir distuninstallcheck dvi \
+	dvi-am html html-am info info-am install install-am \
+	install-binPROGRAMS install-data install-data-am install-exec \
 	install-exec-am install-info install-info-am \
 	install-libLTLIBRARIES install-man install-strip \
 	install-xrootdsfsincHEADERS installcheck installcheck-am \
 	installdirs maintainer-clean maintainer-clean-generic \
 	mostlyclean mostlyclean-compile mostlyclean-generic \
 	mostlyclean-libtool pdf pdf-am ps ps-am tags uninstall \
-	uninstall-am uninstall-info-am uninstall-libLTLIBRARIES \
-	uninstall-xrootdsfsincHEADERS
+	uninstall-am uninstall-binPROGRAMS uninstall-info-am \
+	uninstall-libLTLIBRARIES uninstall-xrootdsfsincHEADERS
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

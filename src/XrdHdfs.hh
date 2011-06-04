@@ -48,6 +48,7 @@ public:
                                  numEntries = 0;
                                  dirPos = 0;
                                  isopen = 0;
+                                 fname = 0;
                                 }
 
                    ~XrdHdfsDirectory();

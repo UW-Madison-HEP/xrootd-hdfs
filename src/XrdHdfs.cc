@@ -119,9 +119,7 @@ int XrdHdfsDirectory::Opendir(const char              *dir_path)
    TRACE(Opendir, "path " << fname);
    if (!(dh = hdfsListDirectory(fs, fname, &numEntries))) {
       isopen = 0;
-      if (errno == 0)
-         return -1;
-      return -errno;
+      return (errno <= 0) ? -1 : -errno;
    }
    isopen = 1;
 
@@ -197,12 +195,16 @@ int XrdHdfsDirectory::Close(long long *retsz)
 
 // Release the handle
 //
-   if (dh != NULL && numEntries > 0)
+   if (dh != NULL && numEntries >= 0) {
       hdfsFreeFileInfo(dh, numEntries);
+   }
 
 // Do some clean-up
 //
-   if (fname) free(fname);
+   if (fname) {
+     free(fname);
+     fname = NULL;
+   }
    dh = (hdfsFileInfo *)0; 
    numEntries = 0;
    dirPos = 0;
@@ -212,7 +214,7 @@ int XrdHdfsDirectory::Close(long long *retsz)
 
 XrdHdfsDirectory::~XrdHdfsDirectory()
 {
-  if (fs != NULL && dh != NULL && numEntries > 0) {
+  if (dh != NULL && numEntries >= 0) {
     hdfsFreeFileInfo(dh, numEntries);
   }
   if (fs != NULL) {
