@@ -111,12 +111,7 @@ public:
 
         int            Ftruncate(unsigned long long) {return -ENOTSUP;}
 
-                       XrdHdfsFile(const char *user=0) : XrdOssDF()
-                                          {
-                                           fs = hdfsConnectAsUserNewInstance("default", 0,
-                                             "nobody");
-                                           fh = NULL; fname = 0;
-                                          }
+                       XrdHdfsFile(const char *user=0);
 
                        ~XrdHdfsFile();
 
@@ -125,6 +120,10 @@ private:
 hdfsFS   fs; // File system object.
 hdfsFile fh; // File Handle
 char *fname; // File Name
+
+/*  TODO: provide read-ahead buffer
+char *buf;   // Read buffer
+*/
 
 };
 
