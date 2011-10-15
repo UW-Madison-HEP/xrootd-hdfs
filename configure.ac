@@ -1,6 +1,6 @@
 
 AC_PREREQ(2.57)
-AC_INIT(xrootd-hdfs,1.5.0,xrootd-demonstrator@opensciencegrid.org)
+AC_INIT(xrootd-hdfs,1.5.1,anydata@listserv.unl.edu)
 AC_CONFIG_SRCDIR([src/XrdHdfs.hh])
 
 AC_PROG_CXX
@@ -58,5 +58,13 @@ AC_CHECK_HEADER([jni.h])
 
 CXXFLAGS="$CXXFLAGS -D_REENTRANT -D_FILE_OFFSET_BITS=64"
 
-AC_OUTPUT(Makefile)
+AC_TRY_LINK([#include <hdfs.h>],
+            [hdfsConnectAsUserNewInstance("default", 0, "nobody");],
+            [HADOOP_VERSION=20],
+            [HADOOP_VERSION=19])
 
+AC_SUBST(HADOOP_VERSION)
+
+AC_CONFIG_FILES([Makefile src/config.h])
+
+AC_OUTPUT()

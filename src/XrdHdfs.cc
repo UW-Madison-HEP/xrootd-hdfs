@@ -36,6 +36,20 @@ const char *XrdHdfsSVNID = "$Id$";
 #include <sys/mode.h>
 #endif
 
+#include "config.h"
+
+namespace
+{
+   hdfsFS hadoop_connect(const char* a, int b, const char* c)
+   {
+#if HADOOP_VERSION < 20
+      hdfsConnectAsUser(a, b, c, 0, 0);
+#else
+      hdfsConnectAsUserNewInstance(a, b, c);
+#endif
+   }
+}
+
 /******************************************************************************/
 /*       O S   D i r e c t o r y   H a n d l i n g   I n t e r f a c e        */
 /******************************************************************************/
@@ -82,7 +96,16 @@ XrdOss *XrdOssGetStorageSystem(XrdOss       *native_oss,
 /******************************************************************************/
 /*                                  O p e n d i r                             */
 /******************************************************************************/
-  
+XrdHdfsDirectory::XrdHdfsDirectory(const char *tid) : XrdOssDF()
+{
+   fs = hadoop_connect("default", 0, "nobody");
+   dh = (hdfsFileInfo*)NULL;
+   numEntries = 0;
+   dirPos = 0;
+   isopen = 0;
+   fname = 0;
+}
+
 int XrdHdfsDirectory::Opendir(const char              *dir_path)
 /*
   Function: Open the directory `path' and prepare for reading.
@@ -235,8 +258,7 @@ XrdHdfsDirectory::~XrdHdfsDirectory()
 /******************************************************************************/
 XrdHdfsFile::XrdHdfsFile(const char *user) : XrdOssDF(), fh(NULL), fname(NULL)
 {
-  fs = hdfsConnectAsUserNewInstance("default", 0,
-    "nobody");
+  fs = hadoop_connect("default", 0, "nobody");
 }
 
 /******************************************************************************/
@@ -581,9 +603,10 @@ const char *XrdHdfsSys::getVersion() {return XrdVERSION;}
 /*                                  S t a t                                   */
 /******************************************************************************/
 
-int XrdHdfsSys::Stat(const char              *path,        // In
-                        struct stat       *buf,         // Out
-                        int                )            // In
+int XrdHdfsSys::Stat(const  char    *path,    // In
+                     struct stat    *buf,     // Out
+                     int,                     // In
+                     XrdOucEnv*)
 /*
   Function: Get info on 'path'.
 
@@ -613,7 +636,7 @@ int XrdHdfsSys::Stat(const char              *path,        // In
        fname = strdup(path);
    }
 
-   hdfsFS fs = hdfsConnectAsUserNewInstance("default", 0, "nobody");
+   hdfsFS fs = hadoop_connect("default", 0, "nobody");
    if (fs == NULL) {
       retc = XrdHdfsSys::Emsg(epname, error, EIO, "stat", fname);
       goto cleanup;

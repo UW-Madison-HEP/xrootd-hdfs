@@ -41,17 +41,10 @@ public:
         int         Readdir(char *buff, int blen);
         int         Close(long long *retsz=0);
 
-                    XrdHdfsDirectory(const char *tid=0) : XrdOssDF()
-                                {
-                                 fs = hdfsConnectAsUserNewInstance("default", 0, "nobody");
-                                 dh  = (hdfsFileInfo*)NULL;
-                                 numEntries = 0;
-                                 dirPos = 0;
-                                 isopen = 0;
-                                 fname = 0;
-                                }
+                    XrdHdfsDirectory(const char *tid=0);
 
                    ~XrdHdfsDirectory();
+
 private:
 
 hdfsFS        fs;
@@ -61,7 +54,6 @@ int            dirPos;
 char          *fname;
 const char    *tident;
 int  isopen;
-
 };
 
 /******************************************************************************/
@@ -163,7 +155,7 @@ const   char          *getVersion();
 
         int            Rename(const char *, const char *) {return -ENOTSUP;}
 
-        int            Stat(const char *, struct stat *, int resonly=0);
+        int            Stat(const char *, struct stat *, int resonly=0, XrdOucEnv* env=0);
 
         int            Truncate(const char *, unsigned long long) {return -ENOTSUP;}
 
