@@ -27,5 +27,5 @@ libXrdHdfsReal_la_LDFLAGS = -lhdfs
 libXrdHdfs_la_SOURCES = \
          src/XrdHdfsBootstrap.cc
 
-EXTRA_DIST = spec/xrootd-hdfs.spec spec/xrootd.sample.hdfs.cfg.in spec/xrootd-hdfs.sysconfig
-
+EXTRA_DIST = spec/xrootd-hdfs.spec spec/xrootd.sample.hdfs.cfg.in spec/xrootd-hdfs.sysconfig \
+             spec/xrootd-hdfs-compat.spec spec/xrootd-hdfs-compat.sysconfig

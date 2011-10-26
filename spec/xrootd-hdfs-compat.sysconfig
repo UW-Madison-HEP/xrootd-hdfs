@@ -1,0 +1,32 @@
+
+HADOOP_CONF_DIR=/etc/hadoop
+HADOOP_HOME=/usr/share/java/hadoop
+
+if [ -e $HADOOP_CONF_DIR/hadoop-env.sh ]; then
+  source $HADOOP_CONF_DIR/hadoop-env.sh
+fi
+
+if [ "x$JAVA_HOME" = "x" ]; then
+JAVA_HOME=/usr/java/default
+fi
+# Often, libjvm gets hidden off the path.
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/i386:$JAVA_HOME/jre/lib/i386/server:$JAVA_HOME/jre/lib/amd64:$JAVA_HOME/jre/lib/amd64/server
+
+# The following is the CLASSPATH building logic from the hadoop script:
+# CLASSPATH initially contains $HADOOP_CONF_DIR
+CLASSPATH="${HADOOP_CONF_DIR}:${HADOOP_HOME}"
+CLASSPATH=${CLASSPATH}:$JAVA_HOME/lib/tools.jar
+
+# so that filenames w/ spaces are handled correctly in loops below
+ORIG_IFS=$IFS
+IFS=
+
+# add user-specified CLASSPATH last
+if [ "$HADOOP_CLASSPATH" != "" ]; then
+  CLASSPATH=${CLASSPATH}:${HADOOP_CLASSPATH}
+fi
+
+IFS=$ORIG_IFS
+
+export CLASSPATH=$CLASSPATH
+

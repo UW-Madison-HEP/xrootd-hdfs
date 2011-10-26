@@ -1,7 +1,7 @@
 
 Name: xrootd-hdfs
-Version: 1.5.0
-Release: 0.pre
+Version: 1.6.0
+Release: 1
 Summary: HDFS plugin for xrootd
 
 Group: System Environment/Daemons
@@ -9,8 +9,8 @@ License: BSD
 URL: svn://t2.unl.edu/brian/XrdHdfs
 Source0: %{name}-%{version}.tar.gz
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
-BuildRequires: xrootd-devel >= 3.0 hadoop-0.20-libhdfs >= 0.20.2+737-4
-Requires: xrootd-server >= 3.0 hadoop-0.20-libhdfs >= 0.20.2+737-4 hadoop-0.20 >= 0.20.2+737-4
+BuildRequires: xrootd-server-devel >= 3.1 hadoop-0.20-libhdfs >= 0.20.2+737-4
+Requires: xrootd-server >= 3.1 hadoop-0.20-libhdfs >= 0.20.2+737-4 hadoop-0.20 >= 0.20.2+737-4
 Conflicts: xrootd < 3.0.3-1
 
 %description
@@ -60,6 +60,10 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) %{_sysconfdir}/sysconfig/xrootd-hdfs
 
 %changelog
+* Tue Oct 25 2011 Matevz Tadel <mtadel@ucsd.edu> 1.6.0-1
+- Updated for xrootd-3.1.
+- Compatibility support for hadoop 0.19.
+
 * Fri Jun 3 2011 Brian Bockelman <bbockelm@cse.unl.edu> 1.5.0-1
 - More reliable, if kludgy, Hadoop environment setup.
 
