@@ -40,10 +40,12 @@ const char *XrdHdfsSVNID = "$Id$";
 
 namespace
 {
+   const char *hdfs_19_groups[] = { "nobody" };
+
    hdfsFS hadoop_connect(const char* a, int b, const char* c)
    {
 #if HADOOP_VERSION < 20
-      hdfsConnectAsUser(a, b, c, 0, 0);
+      hdfsConnectAsUser(a, b, c, hdfs_19_groups, 1);
 #else
       hdfsConnectAsUserNewInstance(a, b, c);
 #endif
@@ -240,9 +242,11 @@ XrdHdfsDirectory::~XrdHdfsDirectory()
   if (dh != NULL && numEntries >= 0) {
     hdfsFreeFileInfo(dh, numEntries);
   }
+#if HADOOP_VERSION >= 20
   if (fs != NULL) {
     hdfsDisconnect(fs);
   }
+#endif
   if (fname) {
     free(fname);
   }
@@ -389,9 +393,11 @@ int XrdHdfsFile::Close(long long int *)
       ret = XrdHdfsSys::Emsg(epname, error, errno, "close", fname);
    }
    fh = NULL;
+#if HADOOP_VERSION >= 20
    if (fs != NULL && hdfsDisconnect(fs) != 0) {
       ret = XrdHdfsSys::Emsg(epname, error, errno, "close", fname); 
    }
+#endif
    fs = NULL;
    if (fname) {
       free(fname);
@@ -403,7 +409,9 @@ int XrdHdfsFile::Close(long long int *)
 XrdHdfsFile::~XrdHdfsFile()
 {
    if (fs && fh) {hdfsCloseFile(fs, fh);}
+#if HADOOP_VERSION >= 20
    if (fs) {hdfsDisconnect(fs);}
+#endif
    if (fname) {free(fname);}
 }
   
@@ -669,8 +677,10 @@ int XrdHdfsSys::Stat(const  char    *path,    // In
 // All went well
 //
 cleanup:
+#if HADOOP_VERSION >= 20
    if (fs)
       hdfsDisconnect(fs);
+#endif
    if (fname)
       free(fname);
    return retc;
@@ -687,7 +697,7 @@ int XrdHdfsSys::Emsg(const char    *pfx,    // Message prefix value
                        const char    *op,     // Operation being performed
                        const char    *target) // The target (e.g., fname)
 {
-    char *etext, buffer[XrdOucEI::Max_Error_Len], unkbuff[64];
+   char *etext, buffer[XrdOucEI::Max_Error_Len], unkbuff[64];
 
 // Get the reason for the error
 //
