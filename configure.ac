@@ -57,11 +57,15 @@ AC_CHECK_HEADER([jni.h])
 
 CXXFLAGS="$CXXFLAGS -D_REENTRANT -D_FILE_OFFSET_BITS=64"
 
+LDFLAGS="$JVM_LIBDIR $HDFS_LIBDIR $XROOTD_LIBDIR $LDFLAGS"
+LIBS="-lhdfs -ljvm"
 AC_TRY_LINK([#include <hdfs.h>],
             [hdfsConnectAsUserNewInstance("default", 0, "nobody");],
             [HADOOP_VERSION=20],
             [HADOOP_VERSION=19])
 AC_SUBST(HADOOP_VERSION)
+LDFLAGS=$LDFLAGS_BUP
+LIBS=$LIBS_BUP
 
 AC_CONFIG_FILES([Makefile src/config.h])
 AC_OUTPUT

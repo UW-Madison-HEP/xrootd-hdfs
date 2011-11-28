@@ -7,7 +7,7 @@ Summary: HDFS plugin for xrootd
 Group: System Environment/Daemons
 License: BSD
 URL: svn://t2.unl.edu/brian/XrdHdfs
-Source0: %{name}-%{version}.tar.gz
+Source0: xrootd-hdfs-%{version}.tar.gz
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 BuildRequires: xrootd-server-devel >= 3.1 hadoop-fuse-devel >= 0.19
 Requires: xrootd-server >= 3.1 hadoop-fuse >= 0.19 hadoop >= 0.19
