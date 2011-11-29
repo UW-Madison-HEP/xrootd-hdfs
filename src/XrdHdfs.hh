@@ -113,10 +113,21 @@ hdfsFS   fs; // File system object.
 hdfsFile fh; // File Handle
 char *fname; // File Name
 
-/*  TODO: provide read-ahead buffer
-char *buf;   // Read buffer
-*/
+char *readbuf;        // Read buffer
+size_t readbuf_size;  // Memory allocated to readbuf
+off_t readbuf_offset; // Offset in file of beginning of readbuf
+size_t readbuf_len;   // Length of data last read into readbuf
+unsigned int readbuf_bypassed;      // reads that were larger than readbuf
+unsigned int readbuf_misses;        // reads for data not in readbuf
+unsigned int readbuf_hits;          // reads satisfied by readbuf
+unsigned int readbuf_partial_hits;  // reads partially satisfied by readbuf
+unsigned long readbuf_bytes_used;   // extra bytes in readbuf that were eventually used
+unsigned long readbuf_bytes_loaded; // extra bytes in readbuf that were read from disk
 
+	// Although this class should not be assumed to be thread-safe,
+	// for now, at least readbuf is protected by a mutex.  This
+	// could eventually be applied more broadly.
+XrdSysMutex readbuf_mutex;
 };
 
 /******************************************************************************/

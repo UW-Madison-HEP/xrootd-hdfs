@@ -260,7 +260,10 @@ XrdHdfsDirectory::~XrdHdfsDirectory()
 /******************************************************************************/
 /*                          C o n s t r u c t o r                             */
 /******************************************************************************/
-XrdHdfsFile::XrdHdfsFile(const char *user) : XrdOssDF(), fh(NULL), fname(NULL)
+XrdHdfsFile::XrdHdfsFile(const char *user) : XrdOssDF(), fh(NULL), fname(NULL),
+    readbuf(NULL), readbuf_size(0), readbuf_offset(0), readbuf_len(0),
+    readbuf_bypassed(0), readbuf_misses(0), readbuf_hits(0), readbuf_partial_hits(0),
+    readbuf_bytes_used(0), readbuf_bytes_loaded(0)
 {
   fs = hadoop_connect("default", 0, "nobody");
 }
@@ -319,6 +322,33 @@ int XrdHdfsFile::Open(const char               *path,      // In
    }
 
    (XrdHdfsSS.eDest)->Say("File we will access: ", fname);
+
+// Allocate readbuf
+//
+   XrdSysMutexHelper readbuf_lock(readbuf_mutex);
+
+   if( !readbuf ) {
+       readbuf_size = 32768;
+       readbuf = (char *)malloc(readbuf_size);
+       if( !readbuf ) {
+           readbuf_size = 0;
+           (XrdHdfsSS.eDest)->Say("Insufficient memory to allocate read-ahead buffer for ", path);
+       }
+   }
+
+// Invalidate contents of readbuf, if any
+//
+   readbuf_offset = 0;
+   readbuf_len = 0;
+
+   readbuf_bypassed = 0;
+   readbuf_misses = 0;
+   readbuf_hits = 0;
+   readbuf_partial_hits = 0;
+   readbuf_bytes_used = 0;
+   readbuf_bytes_loaded = 0;
+
+   readbuf_lock.UnLock();
 
 // Set the actual open mode
 //
@@ -399,6 +429,25 @@ int XrdHdfsFile::Close(long long int *)
    }
 #endif
    fs = NULL;
+
+   XrdSysMutexHelper readbuf_lock(readbuf_mutex);
+
+   if (readbuf) {
+       char stats[300];
+       snprintf(stats,sizeof(stats),"%u misses, %u hits, %u partial hits, %u unbuffered, %lu buffered bytes used of %lu read (%.2f%%)",
+                readbuf_misses,readbuf_hits,readbuf_partial_hits,readbuf_bypassed,
+                readbuf_bytes_used,readbuf_bytes_loaded,
+                100.0*readbuf_bytes_used/readbuf_bytes_loaded);
+       (XrdHdfsSS.eDest)->Say("Readahead buffer stats for ",fname," : ",stats);
+
+      free(readbuf);
+      readbuf = 0;
+      readbuf_size = 0;
+      readbuf_offset = 0;
+      readbuf_len = 0;
+   }
+   readbuf_lock.UnLock();
+
    if (fname) {
       free(fname);
       fname = 0;
@@ -413,6 +462,7 @@ XrdHdfsFile::~XrdHdfsFile()
    if (fs) {hdfsDisconnect(fs);}
 #endif
    if (fname) {free(fname);}
+   if (readbuf) {free(readbuf);}
 }
   
 /******************************************************************************/
@@ -439,9 +489,77 @@ ssize_t XrdHdfsFile::Read(void   *buff,      // Out
 #endif
    size_t nbytes;
 
-// Read the actual number of bytes
-//
-   nbytes = hdfsPread(fs, fh, (off_t)offset, (void *)buff, (size_t)blen);
+   XrdSysMutexHelper readbuf_lock(readbuf_mutex);
+   // There are multiple exit points from this function,
+   // so we rely on the fact that readbuf_lock will unlock
+   // when it goes out of scope.
+
+   if( blen > readbuf_size ) {
+       // request is larger than readbuf, so bypass readbuf and read
+       // directly into caller's buffer
+      nbytes = hdfsPread(fs, fh, (off_t)offset, (void *)buff, (size_t)blen);
+
+      readbuf_bypassed++;
+   }
+   else if( (offset >= readbuf_offset) && (offset + blen <= readbuf_offset + readbuf_len) ) {
+       // satisfy request from read buffer
+       off_t offset_in_readbuf = offset - readbuf_offset;
+       nbytes = blen;
+       memcpy(buff,readbuf + offset_in_readbuf,nbytes);
+
+       readbuf_hits++;
+       readbuf_bytes_used += nbytes;
+   }
+   else {
+       // satisfy as much of request from the read buffer as possible
+       if( (offset >= readbuf_offset) && (offset < readbuf_offset + readbuf_len) ) {
+           off_t offset_in_readbuf = offset - readbuf_offset;
+           nbytes = readbuf_len - offset_in_readbuf;
+           memcpy(buff,readbuf + offset_in_readbuf,nbytes);
+
+           // shift request past end of readbuf
+           blen -= nbytes;
+           offset += nbytes;
+           buff = ((char *)buff) + nbytes;
+
+           readbuf_partial_hits++;
+           readbuf_bytes_used += nbytes;
+       }
+       else {
+           nbytes = 0;
+           readbuf_misses++;
+       }
+
+       // read into readbuf
+       readbuf_offset = offset;
+       readbuf_len = 0;
+       // loop in case of short reads
+       while( readbuf_len < readbuf_size ) {
+           int n = hdfsPread(fs, fh, offset + readbuf_len, (void *)(readbuf + readbuf_len), readbuf_size - readbuf_len);
+           if( n < 0 && errno == EINTR ) {
+               continue;
+           }
+           else if( n < 0 ) {
+               return XrdHdfsSys::Emsg(epname, error, errno, "read", fname);
+           }
+           else if( n == 0 ) {
+               break;
+           }
+           readbuf_len += n;
+       }
+
+	   size_t bytes_to_copy;
+       if( readbuf_len < blen ) {
+           bytes_to_copy = readbuf_len;
+       }
+       else {
+           bytes_to_copy = blen;
+       }
+       memcpy(buff,readbuf,bytes_to_copy);
+
+       readbuf_bytes_loaded += readbuf_len - bytes_to_copy; // extra bytes read
+	   nbytes += bytes_to_copy;
+   }
 
    if (nbytes  < 0)
       return XrdHdfsSys::Emsg(epname, error, errno, "read", fname);
