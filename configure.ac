@@ -1,5 +1,5 @@
 AC_PREREQ(2.57)
-AC_INIT(xrootd-hdfs,1.6.0,anydata@listserv.unl.edu)
+AC_INIT(xrootd-hdfs,1.7.1,anydata@listserv.unl.edu)
 AC_CONFIG_SRCDIR([src/XrdHdfs.hh])
 
 AC_PROG_CXX

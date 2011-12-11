@@ -1,6 +1,6 @@
 
 Name: xrootd-hdfs
-Version: 1.6.0
+Version: 1.7.1
 Release: 1
 Summary: HDFS plugin for xrootd
 
@@ -9,8 +9,9 @@ License: BSD
 URL: svn://t2.unl.edu/brian/XrdHdfs
 Source0: %{name}-%{version}.tar.gz
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
-BuildRequires: xrootd-server-devel >= 3.1 hadoop-0.20-libhdfs >= 0.20.2+737-4
-Requires: xrootd-server >= 3.1 hadoop-0.20-libhdfs >= 0.20.2+737-4 hadoop-0.20 >= 0.20.2+737-4
+BuildRequires: xrootd-libs-devel
+BuildRequires: xrootd-server-devel
+BuildRequires: hadoop-0.20-libhdfs >= 0.20.2+737-4
 Conflicts: xrootd < 3.0.3-1
 
 %description
@@ -60,9 +61,18 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) %{_sysconfdir}/sysconfig/xrootd-hdfs
 
 %changelog
+* Sun Dec 11 2011 Brian Bockelman <bbockelm@cse.unl.edu> - 1.7.1-1
+- Fix logging line for readahead.
+
+* Tue Nov 29 2011 Brian Bockelman <bbockelm@cse.unl.edu> - 1.7.0-1
+- Add read-ahead buffer; contribution from Dan Bradley.
+
 * Tue Oct 25 2011 Matevz Tadel <mtadel@ucsd.edu> 1.6.0-1
 - Updated for xrootd-3.1.
 - Compatibility support for hadoop 0.19.
+
+* Mon Aug 29 2011 Brian Bockelman <bbockelm@cse.unl.edu> - 1.5.0-2
+- New build for OSG koji.
 
 * Fri Jun 3 2011 Brian Bockelman <bbockelm@cse.unl.edu> 1.5.0-1
 - More reliable, if kludgy, Hadoop environment setup.

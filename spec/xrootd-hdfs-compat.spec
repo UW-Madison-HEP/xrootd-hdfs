@@ -1,6 +1,6 @@
 
 Name: xrootd-hdfs-compat
-Version: 1.6.0
+Version: 1.7.1
 Release: 1
 Summary: HDFS plugin for xrootd
 
@@ -60,5 +60,11 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) %{_sysconfdir}/sysconfig/xrootd-hdfs
 
 %changelog
+* Sun Dec 11 2011 Brian Bockelman <bbockelm@cse.unl.edu> - 1.7.1-1
+- Fix logging line for readahead.
+
+* Tue Nov 29 2011 Brian Bockelman <bbockelm@cse.unl.edu> - 1.7.0-1
+- Add read-ahead buffer; contribution from Dan Bradley.
+
 * Tue Oct 25 2011 Matevz Tadel <mtadel@ucsd.edu> 1.6.0-1
 - Clone from xrootd-hdfs to provide legacy support for hadoop-0.19.

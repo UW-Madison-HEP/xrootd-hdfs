@@ -434,10 +434,14 @@ int XrdHdfsFile::Close(long long int *)
 
    if (readbuf) {
        char stats[300];
+       float pct_buf_used = 0;
+       if( readbuf_bytes_loaded > 0 ) {
+           pct_buf_used = 100.0*readbuf_bytes_used/readbuf_bytes_loaded;
+       }
        snprintf(stats,sizeof(stats),"%u misses, %u hits, %u partial hits, %u unbuffered, %lu buffered bytes used of %lu read (%.2f%%)",
                 readbuf_misses,readbuf_hits,readbuf_partial_hits,readbuf_bypassed,
                 readbuf_bytes_used,readbuf_bytes_loaded,
-                100.0*readbuf_bytes_used/readbuf_bytes_loaded);
+                pct_buf_used);
        (XrdHdfsSS.eDest)->Say("Readahead buffer stats for ",fname," : ",stats);
 
       free(readbuf);
