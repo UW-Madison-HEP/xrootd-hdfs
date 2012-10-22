@@ -30,7 +30,7 @@ XrdOss *XrdOssGetStorageSystem(XrdOss       *native_oss,
                          const char         *config_fn,
                          const char         *parms)
 {
-   Bootstrap(native_oss, Logger, config_fn, parms);
+   return Bootstrap(native_oss, Logger, config_fn, parms);
 }
 
 }
@@ -108,7 +108,6 @@ static int DetermineEnvironment( ) {
       return 1;
    }
 
-   size_t bytes_read;
    int needs_classpath = 1;
    int needs_libhdfs_opts = 1;
    int needs_ld_library_path = 1;

@@ -8,7 +8,7 @@
 #define XWRITE(x, y) {if ((safe_write(x, y))) return 1; if ((safe_write("\0", 1))) return 1;}
 
 int safe_write(const char * buf, size_t len) {
-   size_t result = 0;
+   ssize_t result = 0;
    const char * cur_buffer = buf;
    while (len) {
       result = write(1, cur_buffer, len-result);

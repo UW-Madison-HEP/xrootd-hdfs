@@ -26,6 +26,7 @@
 
 #include "hdfs.h"
 
+
 class XrdSfsAio;
 class XrdSysLogger;
 

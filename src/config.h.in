@@ -1,5 +1,0 @@
-#ifndef _XrdHdfs_config_h
-
-#define HADOOP_VERSION @HADOOP_VERSION@
-
-#endif

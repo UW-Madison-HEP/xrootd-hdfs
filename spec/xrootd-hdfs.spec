@@ -1,33 +1,37 @@
 
 Name: xrootd-hdfs
-Version: 1.7.1
+Version: 1.8
 Release: 1
 Summary: HDFS plugin for xrootd
 
-Group: System Environment/Daemons
+Group: System Environment/Development
 License: BSD
-URL: svn://t2.unl.edu/brian/XrdHdfs
-Source0: %{name}-%{version}.tar.gz
+URL: https://github.com/bbockelm/xrootd-hdfs
+# Generated from:
+# git-archive master | gzip -7 > ~/rpmbuild/SOURCES/xrootd-lcmaps.tar.gz
+Source0: %{name}.tar.gz
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 BuildRequires: xrootd-libs-devel
 BuildRequires: xrootd-server-devel
 BuildRequires: hadoop-0.20-libhdfs >= 0.20.2+737-4
 Conflicts: xrootd < 3.0.3-1
 
+%package devel
+Summary: Development headers and libraries for Xrootd HDFS plugin
+Group: System Environment/Development
+
 %description
 %{summary}
 
+%description devel
+%{summary}
+
 %prep
-%setup -q
+%setup -q -c -n %{name}-%{version}
 
 %build
-LDFLAGS="-L/usr/java/default/jre/lib/amd64 -L/usr/java/default/jre/lib/amd64/server -L/usr/java/default/jre/lib/i386/server -L/usr/java/default/jre/lib/i386"
-%ifarch x86_64
-%configure --with-xrootd-incdir=/usr/include/xrootd --with-jvm-incdir=/usr/java/default/include --with-jvm-libdir=/usr/java/default/jre/lib/amd64/server
-%else
-%configure --with-xrootd-incdir=/usr/include/xrootd --with-jvm-incdir=/usr/java/default/include --with-jvm-libdir=/usr/java/default/jre/lib/i386/server
-%endif
-make
+%cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo .
+make VERBOSE=1 %{?_smp_mflags}
 
 %install
 rm -rf $RPM_BUILD_ROOT
@@ -35,8 +39,6 @@ make install DESTDIR=$RPM_BUILD_ROOT
 
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/xrootd
 sed -e "s#@LIBDIR@#%{_libdir}#" spec/xrootd.sample.hdfs.cfg.in > $RPM_BUILD_ROOT%{_sysconfdir}/xrootd/xrootd.sample.hdfs.cfg
-rm -rf $RPM_BUILD_ROOT%{_libdir}/*.a
-rm -rf $RPM_BUILD_ROOT%{_libdir}/*.la
 
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig
 install -m 0644 spec/xrootd-hdfs.sysconfig $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/xrootd-hdfs
@@ -54,13 +56,22 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root,-)
-%{_libdir}/libXrdHdfs*
-%{_includedir}/xrootd/XrdHdfs/XrdHdfs.hh
+%{_libdir}/libXrdHdfs.so.*
+%{_libdir}/libXrdHdfsReal.so
 %{_sysconfdir}/xrootd/xrootd.sample.hdfs.cfg
 %{_libexecdir}/xrootd-hdfs/xrootd_hdfs_envcheck
 %config(noreplace) %{_sysconfdir}/sysconfig/xrootd-hdfs
 
+%files devel
+%{_includedir}/XrdHdfs.hh
+%{_libdir}/libXrdHdfs.so
+
 %changelog
+* Mon Oct 22 2012 Brian Bockelman <bbockelm@cse.unl.edu> - 1.8-1
+- Changeover to cmake.
+- Rebuild for xrootd-3.3; drop usage of private headers.
+- Split off -devel RPM.
+
 * Sun Dec 11 2011 Brian Bockelman <bbockelm@cse.unl.edu> - 1.7.1-1
 - Fix logging line for readahead.
 

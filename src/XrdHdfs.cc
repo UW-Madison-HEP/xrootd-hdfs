@@ -36,18 +36,17 @@ const char *XrdHdfsSVNID = "$Id$";
 #include <sys/mode.h>
 #endif
 
-#include "config.h"
-
 namespace
 {
+#if HADOOP_VERSION < 20
    const char *hdfs_19_groups[] = { "nobody" };
-
+#endif
    hdfsFS hadoop_connect(const char* a, int b, const char* c)
    {
 #if HADOOP_VERSION < 20
-      hdfsConnectAsUser(a, b, c, hdfs_19_groups, 1);
+      return hdfsConnectAsUser(a, b, c, hdfs_19_groups, 1);
 #else
-      hdfsConnectAsUserNewInstance(a, b, c);
+      return hdfsConnectAsUserNewInstance(a, b, c);
 #endif
    }
 }
@@ -516,7 +515,7 @@ ssize_t XrdHdfsFile::Read(void   *buff,      // Out
    }
    else {
        // satisfy as much of request from the read buffer as possible
-       if( (offset >= readbuf_offset) && (offset < readbuf_offset + readbuf_len) ) {
+       if( (offset >= readbuf_offset) && (offset < readbuf_offset + static_cast<off_t>(readbuf_len)) ) {
            off_t offset_in_readbuf = offset - readbuf_offset;
            nbytes = readbuf_len - offset_in_readbuf;
            memcpy(buff,readbuf + offset_in_readbuf,nbytes);
