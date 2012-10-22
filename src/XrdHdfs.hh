@@ -18,8 +18,10 @@
  
 #include "XrdOuc/XrdOucErrInfo.hh"
 #include "XrdOuc/XrdOucName2Name.hh"
+#include "XrdOuc/XrdOucStream.hh"
  
-#include "XrdOss/XrdOssApi.hh"
+#include "XrdOss/XrdOss.hh"
+#include "XrdOss/XrdOssError.hh"
 #include "XrdSfs/XrdSfsAio.hh"
 
 #include "hdfs.h"
@@ -150,6 +152,7 @@ public:
 // Other Functions
 //
         int            Chmod(const char *, mode_t) {return -ENOTSUP;}
+        int            Chmod(const char*, mode_t, XrdOucEnv*) {return -ENOTSUP;}
 
         int            Create(const char *, const char *, mode_t, XrdOucEnv &, int opts=0) {return -ENOTSUP;}
 
@@ -160,18 +163,23 @@ public:
 const   char          *getVersion();
 
         int            Mkdir(const char *, mode_t, int) {return -ENOTSUP;}
+        int            Mkdir(const char*, mode_t, int, XrdOucEnv*) {return -ENOTSUP;}
 
         int            Remdir(const char *) {return -ENOTSUP;}
         int            Remdir(const char *, int) {return -ENOTSUP;}
+        int            Remdir(const char*, int, XrdOucEnv*) {return -ENOTSUP;}
 
         int            Rename(const char *, const char *) {return -ENOTSUP;}
+        int            Rename(const char*, const char*, XrdOucEnv*, XrdOucEnv*) {return -ENOTSUP;}
 
         int            Stat(const char *, struct stat *, int resonly=0, XrdOucEnv* env=0);
 
         int            Truncate(const char *, unsigned long long) {return -ENOTSUP;}
+        int            Truncate(const char*, long long unsigned int, XrdOucEnv*) {return -ENOTSUP;}
 
         int            Unlink(const char *) {return -ENOTSUP;}
         int            Unlink(const char *, int) {return -ENOTSUP;}
+        int            Unlink(const char*, int, XrdOucEnv*) {return -ENOTSUP;}
 
 static  int            Emsg(const char *, XrdOucErrInfo&, int, const char *x,
                             const char *y="");
