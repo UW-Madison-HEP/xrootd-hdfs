@@ -26,10 +26,10 @@ const char *XrdHdfsSVNID = "$Id$";
 #include "XrdSys/XrdSysError.hh"
 #include "XrdSys/XrdSysHeaders.hh"
 #include "XrdSys/XrdSysLogger.hh"
+#include "XrdOuc/XrdOucTrace.hh"
 #include "XrdSys/XrdSysPlugin.hh"
 #include "XrdSys/XrdSysPthread.hh"
 #include "XrdSec/XrdSecInterface.hh"
-#include "XrdOss/XrdOssTrace.hh"
 #include "XrdHdfs.hh"
 
 #ifdef AIX
@@ -116,13 +116,10 @@ int XrdHdfsDirectory::Opendir(const char              *dir_path)
   Output:   Returns XrdOssOK upon success, otherwise (-errno).
 */
 {
-#ifndef NODEBUG
-   static const char *epname = "Opendir";
-#endif
    int retc;
 
 // Return an error if we have already opened
-   if (isopen) return -XRDOSS_E8001;
+   if (isopen) return -EINVAL;
 
 // Set up values for this directory object
 //
@@ -140,7 +137,6 @@ int XrdHdfsDirectory::Opendir(const char              *dir_path)
 
 // Open the directory and get it's id
 //
-   TRACE(Opendir, "path " << fname);
    if (!(dh = hdfsListDirectory(fs, fname, &numEntries))) {
       isopen = 0;
       return (errno <= 0) ? -1 : -errno;
@@ -172,7 +168,7 @@ int XrdHdfsDirectory::Readdir(char * buff, int blen)
     static const char *epname = "Readdir";
 #endif
 
-  if (!isopen) return -XRDOSS_E8002;
+  if (!isopen) return -EBADF;
 
 // Lock the direcrtory and do any required tracing
 //
@@ -211,11 +207,11 @@ int XrdHdfsDirectory::Close(long long *retsz)
 
   Input:    cred       - Authentication credentials, if any.
 
-  Output:   Returns XrdOssOK upon success and XRDOSS_E8002 upon failure.
+  Output:   Returns XrdOssOK upon success and -EBADF upon failure.
 */
 {
 
-   if (!isopen) return -XRDOSS_E8002;
+   if (!isopen) return -EBADF;
 
 // Release the handle
 //
@@ -306,7 +302,7 @@ int XrdHdfsFile::Open(const char               *path,      // In
 // Verify that this object is not already associated with an open file
 //
    if (fh != NULL)
-      return -XRDOSS_E8003;
+      return -EINVAL;
 
    int retc;
    if (XrdHdfsSS.the_N2N) {

@@ -21,7 +21,6 @@
 #include "XrdOuc/XrdOucStream.hh"
  
 #include "XrdOss/XrdOss.hh"
-#include "XrdOss/XrdOssError.hh"
 #include "XrdSfs/XrdSfsAio.hh"
 
 #include "hdfs.h"
