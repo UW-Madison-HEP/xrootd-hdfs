@@ -1,6 +1,6 @@
 
 Name: xrootd-hdfs
-Version: 1.8
+Version: 1.8.1
 Release: 1
 Summary: HDFS plugin for xrootd
 
@@ -8,7 +8,7 @@ Group: System Environment/Development
 License: BSD
 URL: https://github.com/bbockelm/xrootd-hdfs
 # Generated from:
-# git-archive master | gzip -7 > ~/rpmbuild/SOURCES/xrootd-lcmaps.tar.gz
+# git-archive master | gzip -7 > ~/rpmbuild/SOURCES/xrootd-hdfs.tar.gz
 Source0: %{name}.tar.gz
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 BuildRequires: xrootd-libs-devel
@@ -67,6 +67,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libXrdHdfs.so
 
 %changelog
+* Sun Nov 11 2012 Brian Bockelman <bbockelm@cse.unl.edu> - 1.8.1-1
+- Minor tweaks for 3.3.0 RC.
+
 * Mon Oct 22 2012 Brian Bockelman <bbockelm@cse.unl.edu> - 1.8-1
 - Changeover to cmake.
 - Rebuild for xrootd-3.3; drop usage of private headers.
