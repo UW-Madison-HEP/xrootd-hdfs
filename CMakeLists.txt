@@ -21,8 +21,14 @@ SET( CMAKE_SHARED_LINKER_FLAGS "--no-undefined")
 SET( CMAKE_MODULE_LINKER_FLAGS "--no-undefined")
 SET( CMAKE_EXE_LINKER_FLAGS "--no-undefined")
 
+include_directories("${HDFS_INCLUDES}" "${JVM_INCLUDES}" "${JVM_MD_INCLUDES}")
+
+# Test for the correct connect API.
+SET(ORIG_CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES})
+SET(CMAKE_REQUIRED_INCLUDES ${HDFS_INCLUDES} ${JVM_INCLUDES} ${JVM_MD_INCLUDES} ${CMAKE_REQUIRED_INCLUDES} )
 SET(ORIG_CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
 SET(CMAKE_REQUIRED_LIBRARIES "-L${JVM_LIB_DIR} -ljvm -L${HDFS_LIB_DIR} -lhdfs ${CMAKE_REQUIRED_LIBRARIES}")
+
 INCLUDE (CheckCSourceCompiles)
 check_c_source_compiles("
 #include \"hdfs.h\"
@@ -31,7 +37,9 @@ int main() {
     return 0;
 }
 " HAVE_NEW_HDFS)
+
 SET(CMAKE_REQUIRED_LIBRARIES ${ORIG_CMAKE_REQUIRED_LIBRARIES})
+SET(CMAKE_REQUIRED_INCLUDES ${ORIG_CMAKE_REQUIRED_INCLUDES})
 
 if (HAVE_NEW_HDFS)
   add_definitions(-DHADOOP_VERSION=20)
@@ -39,8 +47,7 @@ else()
   add_definitions(-DHADOOP_VERSION=19)
 endif()
 
-include_directories( "${PROJECT_SOURCE_DIR}" "${XROOTD_INCLUDES}"
-"${HDFS_INCLUDES}" "${JVM_INCLUDES}" "${JVM_MD_INCLUDES}" )
+include_directories( "${PROJECT_SOURCE_DIR}" "${XROOTD_INCLUDES}" )
 
 add_library(XrdHdfs MODULE src/XrdHdfsBootstrap.cc)
 target_link_libraries(XrdHdfs ${XROOTD_UTILS} ${DL_LIB})

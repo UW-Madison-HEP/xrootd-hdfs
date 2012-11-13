@@ -1,6 +1,6 @@
 
 Name: xrootd-hdfs
-Version: 1.8.1
+Version: 1.8.2
 Release: 1
 Summary: HDFS plugin for xrootd
 
@@ -13,6 +13,7 @@ Source0: %{name}.tar.gz
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 BuildRequires: xrootd-libs-devel
 BuildRequires: xrootd-server-devel
+BuildRequires: cmake
 BuildRequires: hadoop-0.20-libhdfs >= 0.20.2+737-4
 Conflicts: xrootd < 3.0.3-1
 
@@ -67,6 +68,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libXrdHdfs.so
 
 %changelog
+* Tue Nov 13 2012 Brian Bockelman <bbockelm@cse.unl.edu> - 1.8.2-1
+- Fix compilation issue in mock.
+
 * Sun Nov 11 2012 Brian Bockelman <bbockelm@cse.unl.edu> - 1.8.1-1
 - Minor tweaks for 3.3.0 RC.
 
