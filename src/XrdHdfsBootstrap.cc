@@ -87,7 +87,7 @@ static XrdOss *Bootstrap(XrdOss *native_oss,XrdSysLogger *Logger, const char *co
 }
 
 static int CheckEnvVar(const char * var, const char * input) {
-   char * equal_sign = strchr(input, '=');
+   const char * equal_sign = strchr(input, '=');
    if (equal_sign && (strncmp(input, var, equal_sign-input) == 0)) {
       setenv(var, equal_sign+1, 1);
       return 1;
@@ -95,7 +95,7 @@ static int CheckEnvVar(const char * var, const char * input) {
    return 0;
 }
 
-static char * command_string = "source /etc/sysconfig/xrootd-hdfs && /usr/libexec/xrootd-hdfs/xrootd_hdfs_envcheck";
+static const char * command_string = "source /etc/sysconfig/xrootd-hdfs && /usr/libexec/xrootd-hdfs/xrootd_hdfs_envcheck";
 
 static int DetermineEnvironment( ) {
 
