@@ -66,9 +66,9 @@ namespace
 namespace XrdHdfs
 {
 
-XrdSysError OssEroute(0, "hdfs_");
+XrdSysError HdfsEroute(0, "hdfs_");
 
-XrdOucTrace OssTrace(&OssEroute);
+XrdOucTrace OssTrace(&HdfsEroute);
 
 static XrdHdfsSys XrdHdfsSS;
 
@@ -700,7 +700,7 @@ int XrdHdfsSys::Init(XrdSysLogger *lp, const char *configfn)
 
 // Do the herald thing
 //
-   eDest = &OssEroute;
+   eDest = &HdfsEroute;
    eDest->logger(lp);
    eDest->Say("Copr. 2009, Brian Bockelman, Hdfs Version ");
    eDest->Emsg("Config", "Copr. 2009, Brian Bockelman, Hdfs Version ");
@@ -829,7 +829,7 @@ int XrdHdfsSys::Emsg(const char    *pfx,    // Message prefix value
 // Print it out if debugging is enabled
 //
 #ifndef NODEBUG
-   OssEroute.Emsg(pfx, buffer);
+   HdfsEroute.Emsg(pfx, buffer);
 #endif
 
 // Place the error message in the error object and return

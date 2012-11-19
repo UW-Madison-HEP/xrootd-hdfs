@@ -13,7 +13,7 @@
 
 #define BUFSIZE 8192
 
-XrdSysError OssEroute(0, "oss_");
+XrdSysError HdfsBootstrapEroute(0, "hdfs_bootstrap_");
 
 // Forward declarations.
 class XrdOss;
@@ -72,8 +72,8 @@ static XrdOss *Bootstrap(XrdOss *native_oss,XrdSysLogger *Logger, const char *co
    // The dynamic linker only pays attention to the LD_LIBRARY_PATH the process was started with.
    loadJvm();
  
-   OssEroute.logger(Logger);
-   if (!(myLib = new XrdSysPlugin(&OssEroute, "libXrdHdfsReal.so"))) return 0;
+   HdfsBootstrapEroute.logger(Logger);
+   if (!(myLib = new XrdSysPlugin(&HdfsBootstrapEroute, "libXrdHdfsReal.so"))) return 0;
 
 // Now get the entry point of the object creator
 //
