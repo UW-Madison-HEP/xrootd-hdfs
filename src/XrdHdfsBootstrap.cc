@@ -51,6 +51,7 @@ static int loadJvm() {
          if (dlopen(buf, RTLD_GLOBAL|RTLD_LAZY)) return 0;
       }
 
+      if (!next) break;
       path = next+1;
       if (*path == '\0') break;
       next = strchr(path, ':');
