@@ -39,7 +39,7 @@ class XrdHdfsDirectory : public XrdOssDF
 public:
         XrdOucErrInfo  error;
 
-        int         Opendir(const char *dirName);
+        int         Opendir(const char *dirName, XrdOucEnv &);
         int         Readdir(char *buff, int blen);
         int         Close(long long *retsz=0);
 

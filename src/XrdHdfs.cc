@@ -107,7 +107,7 @@ XrdHdfsDirectory::XrdHdfsDirectory(const char *tid) : XrdOssDF()
    fname = 0;
 }
 
-int XrdHdfsDirectory::Opendir(const char              *dir_path)
+int XrdHdfsDirectory::Opendir(const char *dir_path, XrdOucEnv &)
 /*
   Function: Open the directory `path' and prepare for reading.
 
