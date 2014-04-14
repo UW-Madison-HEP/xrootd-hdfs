@@ -11,10 +11,13 @@ URL: https://github.com/bbockelm/xrootd-hdfs
 # git-archive master | gzip -7 > ~/rpmbuild/SOURCES/xrootd-hdfs.tar.gz
 Source0: %{name}.tar.gz
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
-BuildRequires: xrootd-libs-devel
-BuildRequires: xrootd-server-devel
+BuildRequires: xrootd-devel >= 1:3.3.1
+BuildRequires: xrootd-server-devel >= 1:3.3.1
 BuildRequires: cmake
-BuildRequires: hadoop-0.20-libhdfs >= 0.20.2+737-4
+BuildRequires: hadoop-libhdfs >= 2.0.0+545-1.cdh4.1.1
+BuildRequires: java7-devel
+BuildRequires: jpackage-utils
+Requires: hadoop-client >= 2.0.0+545-1.cdh4.1.1
 Conflicts: xrootd < 3.0.3-1
 
 %package devel
@@ -71,6 +74,35 @@ rm -rf $RPM_BUILD_ROOT
 * Mon Apr 14 2014 Brian Bockelman <bbockelm@cse.unl.edu> - 1.8.4-1
 - Add Xrootd versioning information.
 - Fix directory listing.
+
+* Mon Jun 03 2013 Matyas Selmeci <matyas@cs.wisc.edu> - 1.8.3-12
+- Change to sysconfig file to handle symlinked $JAVA_HOME properly on el5
+
+* Fri May 31 2013 Matyas Selmeci <matyas@cs.wisc.edu> - 1.8.3-11
+- Add hadoop-client dependency
+
+* Tue May 28 2013 Matyas Selmeci <matyas@cs.wisc.edu> - 1.8.3-10
+- Fix segfault when LD_LIBRARY_PATH exists but is empty
+
+* Thu May 23 2013 Matyas Selmeci <matyas@cs.wisc.edu> - 1.8.3-9
+- Rebuild for hadoop 2.0; add sysconfig file
+
+* Thu Apr 18 2013 Carl Edquist <edquist@cs.wisc.edu> - 1.8.3-8
+- Merge in xrootd 3.3.1 reqs
+
+* Thu Apr 18 2013 Matyas Selmeci <matyas@cs.wisc.edu> - 1.8.3-7
+- Explicitly Require and BuildRequire xrootd 3.3.1
+
+* Thu Apr 04 2013 Carl Edquist <edquist@cs.wisc.edu> - 1.8.3-5
+- Rebuild for updated build dependency (hadoop-0.20),
+- Explicitly add java7-devel build requirement
+
+* Wed Apr 03 2013 Matyas Selmeci <matyas@cs.wisc.edu> - 1.8.3-4
+- Bump to rebuild against xrootd 3.3.1
+- Rename xrootd-libs-devel dependency to match what 3.3.1 calls it
+
+* Mon Nov 26 2012 Doug Strain <dstrain@fnal.gov> - 1.8.3-3
+- Rebuild to link correctly with libhdfs
 
 * Mon Nov 19 2012 Brian Bockelman <bbockelm@cse.unl.edu> - 1.8.3-1
 - Fix symbol visibility issues with xrootd 3.3.0-rc1.
