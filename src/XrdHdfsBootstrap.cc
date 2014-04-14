@@ -10,9 +10,11 @@
 
 #include "XrdSys/XrdSysPlugin.hh"
 #include "XrdSys/XrdSysError.hh"
+#include "XrdVersion.hh"
 
 #define BUFSIZE 8192
 
+XrdVERSIONINFO(XrdOssGetStorageSystem,"hdfs");
 XrdSysError HdfsBootstrapEroute(0, "hdfs_bootstrap_");
 
 // Forward declarations.

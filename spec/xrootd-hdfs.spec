@@ -1,7 +1,7 @@
 
 Name: xrootd-hdfs
-Version: 1.8.3
-Release: 1
+Version: 1.8.4
+Release: 1%{?dist}
 Summary: HDFS plugin for xrootd
 
 Group: System Environment/Development
@@ -68,6 +68,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/XrdHdfs.hh
 
 %changelog
+* Mon Apr 14 2014 Brian Bockelman <bbockelm@cse.unl.edu> - 1.8.4-1
+- Add Xrootd versioning information.
+- Fix directory listing.
+
 * Mon Nov 19 2012 Brian Bockelman <bbockelm@cse.unl.edu> - 1.8.3-1
 - Fix symbol visibility issues with xrootd 3.3.0-rc1.
 
