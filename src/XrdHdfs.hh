@@ -97,7 +97,7 @@ public:
                             off_t               fileOffset,
                             size_t              buffer_size) {return Read(buffer, fileOffset, buffer_size);}
 
-        ssize_t        Write(const char        *buffer,
+        ssize_t        Write(const void *buffer,
                              off_t              fileOffset,
                              size_t             buffer_size);
 
@@ -105,15 +105,16 @@ public:
 
         int            Ftruncate(unsigned long long) {return -ENOTSUP;}
 
-                       XrdHdfsFile(const char *user=0);
+        XrdHdfsFile(const char *user=0);
 
-                       ~XrdHdfsFile();
+        ~XrdHdfsFile();
 
 private:
 
-hdfsFS   fs; // File system object.
+hdfsFS   m_fs; // File system object.
 hdfsFile fh; // File Handle
 char *fname; // File Name
+ssize_t m_nextoff; // Next offset for writes.
 
 char *readbuf;        // Read buffer
 size_t readbuf_size;  // Memory allocated to readbuf
@@ -130,6 +131,8 @@ unsigned long readbuf_bytes_loaded; // extra bytes in readbuf that were read fro
 	// for now, at least readbuf is protected by a mutex.  This
 	// could eventually be applied more broadly.
 XrdSysMutex readbuf_mutex;
+
+    bool Connect(const XrdOucEnv &);
 };
 
 /******************************************************************************/

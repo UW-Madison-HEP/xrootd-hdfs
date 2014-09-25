@@ -27,6 +27,7 @@ const char *XrdHdfsSVNID = "$Id$";
 #include "XrdSys/XrdSysHeaders.hh"
 #include "XrdSys/XrdSysLogger.hh"
 #include "XrdOuc/XrdOucTrace.hh"
+#include "XrdOuc/XrdOucEnv.hh"
 #include "XrdSys/XrdSysPlugin.hh"
 #include "XrdSys/XrdSysPthread.hh"
 #include "XrdSec/XrdSecInterface.hh"
@@ -255,12 +256,34 @@ XrdHdfsDirectory::~XrdHdfsDirectory()
 /******************************************************************************/
 /*                          C o n s t r u c t o r                             */
 /******************************************************************************/
-XrdHdfsFile::XrdHdfsFile(const char *user) : XrdOssDF(), fh(NULL), fname(NULL),
+XrdHdfsFile::XrdHdfsFile(const char *user) : XrdOssDF(), m_fs(NULL), fh(NULL), fname(NULL), m_nextoff(0),
     readbuf(NULL), readbuf_size(0), readbuf_offset(0), readbuf_len(0),
     readbuf_bypassed(0), readbuf_misses(0), readbuf_hits(0), readbuf_partial_hits(0),
     readbuf_bytes_used(0), readbuf_bytes_loaded(0)
 {
-  fs = hadoop_connect("default", 0, "nobody");
+}
+
+
+/******************************************************************************/
+/*                              C o n n e c t                                 */
+/******************************************************************************/
+bool XrdHdfsFile::Connect(const XrdOucEnv &client)
+{
+    if (m_fs)
+    {
+        hdfsDisconnect(m_fs);
+        m_fs = NULL;
+    }
+    const XrdSecEntity *sec = const_cast<XrdOucEnv&>(client).secEnv();
+    if (sec && sec->name)
+    {
+        m_fs = hdfsConnectAsUserNewInstance("default", 0, sec->name);
+    }
+    else
+    {
+        m_fs = hdfsConnectAsUserNewInstance("default", 0, "nobody");
+    }
+    return m_fs;
 }
 
 /******************************************************************************/
@@ -351,16 +374,17 @@ int XrdHdfsFile::Open(const char               *path,      // In
    {
    case O_RDONLY: open_flag = O_RDONLY; break;
    case O_WRONLY: open_flag = O_WRONLY; break;
-   case O_RDWR:   open_flag = O_RDWR;   break;
+   case O_RDWR:   open_flag = O_WRONLY;   break;
    default:           open_flag = O_RDONLY; break;
    }
 
    // HDFS does not support read-write mode.
+/*
    if (openMode & O_RDWR) {
        return XrdHdfsSys::Emsg(epname,error,ENOTSUP, "Read-write mode not"
            " supported by HDFS.",path);
    }
-
+*/
 // Prepare to create or open the file, as needed
 //
    if (openMode & O_CREAT) {
@@ -370,17 +394,25 @@ int XrdHdfsFile::Open(const char               *path,      // In
                  opname = (char *)"truncate";
       } else opname = (char *)"open";
 
+// Setup a new filesystem instance.
+   if (!Connect(client))
+   {
+       return XrdHdfsSys::Emsg(epname, error, EIO, "Failed to connect to HDFS");
+   }
+
 // Open the file and make sure it is a file
 //
 
    int err_code = 0;
 
-   if ((fh = hdfsOpenFile(fs, fname, open_flag, 0, 0, 0)) == NULL) {
+   if ((fh = hdfsOpenFile(m_fs, fname, open_flag, 0, 0, 0)) == NULL) {
        err_code = errno;
-       hdfsFileInfo * fileInfo = hdfsGetPathInfo(fs, fname);
+       hdfsFileInfo * fileInfo = hdfsGetPathInfo(m_fs, fname);
        if (fileInfo != NULL) {
            if (fileInfo->mKind == kObjectKindDirectory) {
                    err_code = EISDIR;
+           } else {
+               err_code = EEXIST;
            }
            hdfsFreeFileInfo(fileInfo, 1);
        } else { 
@@ -414,16 +446,16 @@ int XrdHdfsFile::Close(long long int *)
 // Release the handle and return
 //
    int ret = XrdOssOK;
-   if (fh != NULL  && hdfsCloseFile(fs, fh) != 0) {
+   if (fh != NULL  && hdfsCloseFile(m_fs, fh) != 0) {
       ret = XrdHdfsSys::Emsg(epname, error, errno, "close", fname);
    }
    fh = NULL;
 #if HADOOP_VERSION >= 20
-   if (fs != NULL && hdfsDisconnect(fs) != 0) {
+   if (m_fs != NULL && hdfsDisconnect(m_fs) != 0) {
       ret = XrdHdfsSys::Emsg(epname, error, errno, "close", fname); 
    }
 #endif
-   fs = NULL;
+   m_fs = NULL;
 
    XrdSysMutexHelper readbuf_lock(readbuf_mutex);
 
@@ -456,9 +488,9 @@ int XrdHdfsFile::Close(long long int *)
 
 XrdHdfsFile::~XrdHdfsFile()
 {
-   if (fs && fh) {hdfsCloseFile(fs, fh);}
+   if (m_fs && fh) {hdfsCloseFile(m_fs, fh);}
 #if HADOOP_VERSION >= 20
-   if (fs) {hdfsDisconnect(fs);}
+   if (m_fs) {hdfsDisconnect(m_fs);}
 #endif
    if (fname) {free(fname);}
    if (readbuf) {free(readbuf);}
@@ -496,7 +528,7 @@ ssize_t XrdHdfsFile::Read(void   *buff,      // Out
    if( blen > readbuf_size ) {
        // request is larger than readbuf, so bypass readbuf and read
        // directly into caller's buffer
-      nbytes = hdfsPread(fs, fh, (off_t)offset, (void *)buff, (size_t)blen);
+      nbytes = hdfsPread(m_fs, fh, (off_t)offset, (void *)buff, (size_t)blen);
 
       readbuf_bypassed++;
    }
@@ -534,7 +566,7 @@ ssize_t XrdHdfsFile::Read(void   *buff,      // Out
        readbuf_len = 0;
        // loop in case of short reads
        while( readbuf_len < readbuf_size ) {
-           int n = hdfsPread(fs, fh, offset + readbuf_len, (void *)(readbuf + readbuf_len), readbuf_size - readbuf_len);
+           int n = hdfsPread(m_fs, fh, offset + readbuf_len, (void *)(readbuf + readbuf_len), readbuf_size - readbuf_len);
            if( n < 0 && errno == EINTR ) {
                continue;
            }
@@ -587,7 +619,7 @@ int XrdHdfsFile::Read(XrdSfsAio *aiop)
 /*                                 W r i t e                                  */
 /******************************************************************************/
 
-ssize_t XrdHdfsFile::Write(const char *buff,    // In
+ssize_t XrdHdfsFile::Write(const void *buff,    // In
                                  off_t offset,  // In
                                  size_t blen)   // In
 /*
@@ -604,8 +636,6 @@ ssize_t XrdHdfsFile::Write(const char *buff,    // In
   Notes:    An error return may be delayed until the next write(), close(), or
             sync() call.
 
-This is currently not implemented for HDFS
-
 */
 {
    static const char *epname = "write";
@@ -617,9 +647,16 @@ This is currently not implemented for HDFS
       return XrdHdfsSys::Emsg(epname, error, EFBIG, "write", fname);
 #endif
 
-   return XrdHdfsSys::Emsg(epname,error,ENOTSUP, "Write mode not"
-      " supported by HDFS.",fname);
+    if (offset != m_nextoff)
+    {
+        return XrdHdfsSys::Emsg(epname, error, ENOTSUP, "Out-of-order writes not"
+            " supported by HDFS.", fname);
+    }
 
+    ssize_t result = hdfsWrite(m_fs, fh, buff, blen);
+    if (result >= 0) {m_nextoff += result;}
+
+   return result;
 }
 
 /******************************************************************************/
@@ -652,14 +689,13 @@ int XrdHdfsFile::Fstat(struct stat     *buf)         // Out
 {
    static const char *epname = "stat";
 
-   hdfsFileInfo * fileInfo = hdfsGetPathInfo(fs, fname);
+   hdfsFileInfo * fileInfo = hdfsGetPathInfo(m_fs, fname);
 // Execute the function
 //
    if (fileInfo == NULL)
       return XrdHdfsSys::Emsg(epname, error, errno, "stat", fname);
-
-   buf->st_mode = (fileInfo->mKind == kObjectKindDirectory) ? (S_IFDIR | 0777):\
-      (S_IFREG | 0666);
+   buf->st_mode = fileInfo->mPermissions;
+   buf->st_mode |= (fileInfo->mKind == kObjectKindDirectory) ? S_IFDIR : S_IFREG;
    buf->st_nlink = (fileInfo->mKind == kObjectKindDirectory) ? 0 : 1;
    buf->st_uid = 1;
    buf->st_gid = 1;
@@ -776,8 +812,8 @@ int XrdHdfsSys::Stat(const  char    *path,    // In
       goto cleanup;
    }
 
-   buf->st_mode = (fileInfo->mKind == kObjectKindDirectory) ? (S_IFDIR | 0777):\
-      (S_IFREG | 0666);
+   buf->st_mode = fileInfo->mPermissions;
+   buf->st_mode |= (fileInfo->mKind == kObjectKindDirectory) ? S_IFDIR : S_IFREG;
    buf->st_nlink = (fileInfo->mKind == kObjectKindDirectory) ? 0 : 1;
    buf->st_uid = 1;
    buf->st_gid = 1;
