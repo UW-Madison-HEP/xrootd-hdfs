@@ -1,6 +1,6 @@
 
 Name: xrootd-hdfs
-Version: 1.8.4
+Version: 1.8.5
 Release: 1%{?dist}
 Summary: HDFS plugin for xrootd
 
@@ -8,7 +8,7 @@ Group: System Environment/Development
 License: BSD
 URL: https://github.com/bbockelm/xrootd-hdfs
 # Generated from:
-# git-archive master | gzip -7 > ~/rpmbuild/SOURCES/xrootd-hdfs.tar.gz
+# git archive --prefix=%{name}-%{version}/ v%{version} | gzip > %{name}-%{version}.tar.gz
 Source0: %{name}.tar.gz
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 BuildRequires: xrootd-devel >= 1:3.3.1
@@ -71,6 +71,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/XrdHdfs.hh
 
 %changelog
+* Thu Sep 25 2014 Brian Bockelman <bbockelm@cse.unl.edu> - 1.8.5-1
+- Add support for writes.
+
 * Mon Apr 14 2014 Brian Bockelman <bbockelm@cse.unl.edu> - 1.8.4-1
 - Add Xrootd versioning information.
 - Fix directory listing.
