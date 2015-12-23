@@ -50,6 +50,20 @@ namespace
       return hdfsConnectAsUserNewInstance(a, b, c);
 #endif
    }
+
+const char* ExtractAuthName(const XrdOucEnv& client) {
+
+    const XrdSecEntity *sec = const_cast<XrdOucEnv&>(client).secEnv();
+    if (sec && sec->name)
+    {
+        return sec->name;
+    }
+    else
+    {
+        return "nobody";
+    }
+}
+
 }
 
 /******************************************************************************/
@@ -100,7 +114,7 @@ XrdOss *XrdOssGetStorageSystem(XrdOss       *native_oss,
 /******************************************************************************/
 XrdHdfsDirectory::XrdHdfsDirectory(const char *tid) : XrdOssDF()
 {
-   fs = hadoop_connect("default", 0, "nobody");
+   fs = NULL;
    dh = (hdfsFileInfo*)NULL;
    numEntries = 0;
    dirPos = 0;
@@ -108,7 +122,7 @@ XrdHdfsDirectory::XrdHdfsDirectory(const char *tid) : XrdOssDF()
    fname = 0;
 }
 
-int XrdHdfsDirectory::Opendir(const char *dir_path, XrdOucEnv &)
+int XrdHdfsDirectory::Opendir(const char *dir_path, XrdOucEnv & client)
 /*
   Function: Open the directory `path' and prepare for reading.
 
@@ -121,6 +135,11 @@ int XrdHdfsDirectory::Opendir(const char *dir_path, XrdOucEnv &)
 
 // Return an error if we have already opened
    if (isopen) return -EINVAL;
+
+// Get the security name, and connect with it
+   const char* sec_name = ExtractAuthName(client);
+   fs = hadoop_connect("default", 0, sec_name);
+
 
 // Set up values for this directory object
 //
@@ -767,7 +786,7 @@ const char *XrdHdfsSys::getVersion() {return XrdVERSION;}
 int XrdHdfsSys::Stat(const  char    *path,    // In
                      struct stat    *buf,     // Out
                      int,                     // In
-                     XrdOucEnv*)
+                     XrdOucEnv* client)
 /*
   Function: Get info on 'path'.
 
@@ -797,7 +816,9 @@ int XrdHdfsSys::Stat(const  char    *path,    // In
        fname = strdup(path);
    }
 
-   hdfsFS fs = hadoop_connect("default", 0, "nobody");
+// Get the security name, and connect with it
+   const char* sec_name = ExtractAuthName(*client);
+   hdfsFS fs = hadoop_connect("default", 0, sec_name);
    if (fs == NULL) {
       retc = XrdHdfsSys::Emsg(epname, error, EIO, "stat", fname);
       goto cleanup;
