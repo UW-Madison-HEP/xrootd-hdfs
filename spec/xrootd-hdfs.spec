@@ -1,6 +1,6 @@
 
 Name: xrootd-hdfs
-Version: 1.8.5
+Version: 1.8.6
 Release: 1%{?dist}
 Summary: HDFS plugin for xrootd
 
@@ -9,7 +9,7 @@ License: BSD
 URL: https://github.com/bbockelm/xrootd-hdfs
 # Generated from:
 # git archive --prefix=%{name}-%{version}/ v%{version} | gzip > %{name}-%{version}.tar.gz
-Source0: %{name}.tar.gz
+Source0: %{name}-%{version}.tar.gz
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 BuildRequires: xrootd-devel >= 1:3.3.1
 BuildRequires: xrootd-server-devel >= 1:3.3.1
@@ -31,7 +31,7 @@ Group: System Environment/Development
 %{summary}
 
 %prep
-%setup -q -c -n %{name}-%{version}
+%setup -q
 
 %build
 %cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo .
@@ -71,6 +71,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/XrdHdfs.hh
 
 %changelog
+* Sat Jan 02 2016 Brian Bockelman <bbockelm@cse.unl.edu> - 1.8.6-1
+- Add support for non-world-readable files.
+
 * Thu Sep 25 2014 Brian Bockelman <bbockelm@cse.unl.edu> - 1.8.5-1
 - Add support for writes.
 
