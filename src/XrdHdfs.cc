@@ -817,7 +817,10 @@ int XrdHdfsSys::Stat(const  char    *path,    // In
    }
 
 // Get the security name, and connect with it
-   const char* sec_name = ExtractAuthName(*client);
+//   When the cmsd uses this class, client is NULL.  Within the cmsd
+//   network, things should act as the superuser -- but only for 'stat'
+//   (not Open or OpenDir - those should remain 'nobody'!).
+   const char* sec_name = client ? ExtractAuthName(*client) : "root";
    hdfsFS fs = hadoop_connect("default", 0, sec_name);
    if (fs == NULL) {
       retc = XrdHdfsSys::Emsg(epname, error, EIO, "stat", fname);
