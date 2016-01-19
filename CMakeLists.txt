@@ -17,9 +17,9 @@ if( CMAKE_COMPILER_IS_GNUCC )
   set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror" )
 endif()
 
-SET( CMAKE_SHARED_LINKER_FLAGS "--no-undefined")
-SET( CMAKE_MODULE_LINKER_FLAGS "--no-undefined")
-SET( CMAKE_EXE_LINKER_FLAGS "--no-undefined")
+SET( CMAKE_SHARED_LINKER_FLAGS "-Wl,--no-undefined")
+SET( CMAKE_MODULE_LINKER_FLAGS "-Wl,--no-undefined")
+SET( CMAKE_EXE_LINKER_FLAGS "-Wl,--no-undefined")
 
 include_directories("${HDFS_INCLUDES}" "${JVM_INCLUDES}" "${JVM_MD_INCLUDES}")
 
