@@ -338,7 +338,6 @@ int XrdHdfsFile::Open(const char               *path,      // In
    static const char *epname = "open";
 #endif
    //const int AMode = S_IRWXU|S_IRWXG|S_IROTH|S_IXOTH; // 775
-   char *opname;
    int open_flag = 0;
 
 // Verify that this object is not already associated with an open file
@@ -406,12 +405,9 @@ int XrdHdfsFile::Open(const char               *path,      // In
 */
 // Prepare to create or open the file, as needed
 //
-   if (openMode & O_CREAT) {
-       opname = (char *)"create";
-   } else if (openMode & O_TRUNC) {
-         open_flag  = O_TRUNC;
-                 opname = (char *)"truncate";
-      } else opname = (char *)"open";
+   if (openMode & O_TRUNC) {
+       open_flag = O_TRUNC;
+   }
 
 // Setup a new filesystem instance.
    if (!Connect(client))

@@ -17,9 +17,9 @@ if( CMAKE_COMPILER_IS_GNUCC )
   set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror" )
 endif()
 
-SET( CMAKE_SHARED_LINKER_FLAGS "--no-undefined")
-SET( CMAKE_MODULE_LINKER_FLAGS "--no-undefined")
-SET( CMAKE_EXE_LINKER_FLAGS "--no-undefined")
+SET( CMAKE_SHARED_LINKER_FLAGS "-Wl,--no-undefined")
+SET( CMAKE_MODULE_LINKER_FLAGS "-Wl,--no-undefined")
+SET( CMAKE_EXE_LINKER_FLAGS "-Wl,--no-undefined")
 
 include_directories("${HDFS_INCLUDES}" "${JVM_INCLUDES}" "${JVM_MD_INCLUDES}")
 
@@ -57,17 +57,17 @@ target_link_libraries(XrdHdfsReal ${HDFS_LIB} ${XROOTD_UTILS})
 
 add_executable(xrootd_hdfs_envcheck src/XrdHdfsEnvCheck.cc)
 
-if (NOT DEFINED CMAKE_INSTALL_LIBDIR)
-  SET(CMAKE_INSTALL_LIBDIR "lib")
+if (NOT DEFINED LIB_INSTALL_DIR)
+  SET(LIB_INSTALL_DIR "lib")
 endif()
 
 install(
   TARGETS XrdHdfs
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} )
+  LIBRARY DESTINATION ${LIB_INSTALL_DIR} )
 
 install(
   TARGETS XrdHdfsReal
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} )
+  LIBRARY DESTINATION ${LIB_INSTALL_DIR} )
 
 install(
   PROGRAMS xrootd_hdfs_envcheck
