@@ -57,17 +57,17 @@ target_link_libraries(XrdHdfsReal ${HDFS_LIB} ${XROOTD_UTILS})
 
 add_executable(xrootd_hdfs_envcheck src/XrdHdfsEnvCheck.cc)
 
-if (NOT DEFINED CMAKE_INSTALL_LIBDIR)
-  SET(CMAKE_INSTALL_LIBDIR "lib")
+if (NOT DEFINED LIB_INSTALL_DIR)
+  SET(LIB_INSTALL_DIR "lib")
 endif()
 
 install(
   TARGETS XrdHdfs
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} )
+  LIBRARY DESTINATION ${LIB_INSTALL_DIR} )
 
 install(
   TARGETS XrdHdfsReal
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} )
+  LIBRARY DESTINATION ${LIB_INSTALL_DIR} )
 
 install(
   PROGRAMS xrootd_hdfs_envcheck
