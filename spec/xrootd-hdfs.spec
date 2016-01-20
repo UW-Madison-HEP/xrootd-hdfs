@@ -1,6 +1,6 @@
 
 Name: xrootd-hdfs
-Version: 1.8.6
+Version: 1.8.7
 Release: 1%{?dist}
 Summary: HDFS plugin for xrootd
 
@@ -71,6 +71,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/XrdHdfs.hh
 
 %changelog
+* Wed Jan 20 2016 Carl Edquist <edquist@cs.wisc.edu> - 1.8.7-1
+- EL7 build fixes (SOFTWARE-2162)
+
 * Sat Jan 02 2016 Brian Bockelman <bbockelm@cse.unl.edu> - 1.8.6-1
 - Add support for non-world-readable files.
 
