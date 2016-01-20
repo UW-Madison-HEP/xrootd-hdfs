@@ -11,8 +11,8 @@ URL: https://github.com/bbockelm/xrootd-hdfs
 # git archive --prefix=%{name}-%{version}/ v%{version} | gzip > %{name}-%{version}.tar.gz
 Source0: %{name}-%{version}.tar.gz
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
-BuildRequires: xrootd-devel >= 1:3.3.1
-BuildRequires: xrootd-server-devel >= 1:3.3.1
+BuildRequires: xrootd-devel >= 1:4.1
+BuildRequires: xrootd-server-devel >= 1:4.1
 BuildRequires: cmake
 BuildRequires: hadoop-libhdfs >= 2.0.0+545-1.cdh4.1.1
 BuildRequires: java7-devel
