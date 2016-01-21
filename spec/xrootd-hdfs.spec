@@ -1,6 +1,6 @@
 
 Name: xrootd-hdfs
-Version: 1.8.6
+Version: 1.8.7
 Release: 1%{?dist}
 Summary: HDFS plugin for xrootd
 
@@ -8,11 +8,11 @@ Group: System Environment/Development
 License: BSD
 URL: https://github.com/bbockelm/xrootd-hdfs
 # Generated from:
-# git archive --prefix=%{name}-%{version}/ v%{version} | gzip > %{name}-%{version}.tar.gz
+# git archive --format=tgz --prefix=%{name}-%{version}/ v%{version} > %{name}-%{version}.tar.gz
 Source0: %{name}-%{version}.tar.gz
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
-BuildRequires: xrootd-devel >= 1:3.3.1
-BuildRequires: xrootd-server-devel >= 1:3.3.1
+BuildRequires: xrootd-devel >= 1:4.1
+BuildRequires: xrootd-server-devel >= 1:4.1
 BuildRequires: cmake
 BuildRequires: hadoop-libhdfs >= 2.0.0+545-1.cdh4.1.1
 BuildRequires: java7-devel
@@ -71,6 +71,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/XrdHdfs.hh
 
 %changelog
+* Wed Jan 20 2016 Carl Edquist <edquist@cs.wisc.edu> - 1.8.7-1
+- EL7 build fixes (SOFTWARE-2162)
+
 * Sat Jan 02 2016 Brian Bockelman <bbockelm@cse.unl.edu> - 1.8.6-1
 - Add support for non-world-readable files.
 
