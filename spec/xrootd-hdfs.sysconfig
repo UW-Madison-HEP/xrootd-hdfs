@@ -30,7 +30,7 @@ fi
 
 # The native libraries contain heavily-optimized performance-critical routines (such as checksum algorithms)
 # SOFTWARE-2387
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HADOOP_LIB_DIR/lib/native
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${HADOOP_LIB_DIR}/lib/native
 
 # Pulls all jars from hadoop client package and conf files from HADOOP_CONF_DIR
 for jar in ${HADOOP_HOME}/client/*.jar; do
