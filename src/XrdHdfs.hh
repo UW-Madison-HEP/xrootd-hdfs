@@ -55,7 +55,7 @@ int            numEntries;
 int            dirPos;
 char          *fname;
 const char    *tident;
-int  isopen;
+bool           isopen;
 };
 
 /******************************************************************************/
