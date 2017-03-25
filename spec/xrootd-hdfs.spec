@@ -1,6 +1,6 @@
 Name: xrootd-hdfs
 Version: 1.9.0
-Release: 0%{?dist}
+Release: 1%{?dist}
 Summary: HDFS plugin for xrootd
 
 Group: System Environment/Development
