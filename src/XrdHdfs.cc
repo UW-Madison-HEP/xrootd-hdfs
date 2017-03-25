@@ -22,6 +22,8 @@ const char *XrdHdfsSVNID = "$Id$";
 #include <sys/param.h>
 #include <sys/stat.h>
 
+#include <map>
+
 #include "XrdVersion.hh"
 #include "XrdSys/XrdSysError.hh"
 #include "XrdSys/XrdSysHeaders.hh"
@@ -33,21 +35,41 @@ const char *XrdHdfsSVNID = "$Id$";
 #include "XrdSec/XrdSecInterface.hh"
 #include "XrdHdfs.hh"
 
-#ifdef AIX
-#include <sys/mode.h>
-#endif
+#define REUSE_CONNECTION 1
+
+// Static copy of filesystem for when we're used by the cmsd.
+XrdSysMutex XrdHdfsSys::m_fs_mutex;
+hdfsFS XrdHdfsSys::m_cmsd_fs = NULL;
 
 namespace
 {
-#if HADOOP_VERSION < 20
-   const char *hdfs_19_groups[] = { "nobody" };
-#endif
-   hdfsFS hadoop_connect(const char* a, int b, const char* c)
+   XrdSysMutex g_fs_mutex;
+   std::map<std::string, hdfsFS> g_fs_map;
+
+   hdfsFS hadoop_connect(const char* instance, int port, const char* username)
    {
-#if HADOOP_VERSION < 20
-      return hdfsConnectAsUser(a, b, c, hdfs_19_groups, 1);
+#ifdef REUSE_CONNECTION
+      XrdSysMutexHelper fs_lock(g_fs_mutex);
+      std::map<std::string, hdfsFS>::iterator iter = g_fs_map.find(username);
+      if (iter != g_fs_map.end()) {
+         return iter->second;
+      }
+      hdfsFS fs = hdfsConnectAsUserNewInstance(instance, port, username);
+      if (fs) {
+         g_fs_map.insert(std::pair<std::string, hdfsFS>(username, fs));
+      }
+      return fs;
 #else
-      return hdfsConnectAsUserNewInstance(a, b, c);
+      return hdfsConnectAsUserNewInstance(instance, port, username);
+#endif
+   }
+
+   void hadoop_disconnect(hdfsFS fs)
+   {
+#ifndef REUSE_CONNECTION
+      if (fs != NULL) {
+         hdfsDisconnect(fs);
+      }
 #endif
    }
 
@@ -120,6 +142,7 @@ XrdHdfsDirectory::XrdHdfsDirectory(const char *tid) : XrdOssDF()
    dirPos = 0;
    isopen = 0;
    fname = 0;
+   m_stat_buf = NULL;
 }
 
 int XrdHdfsDirectory::Opendir(const char *dir_path, XrdOucEnv & client)
@@ -190,7 +213,7 @@ int XrdHdfsDirectory::Readdir(char * buff, int blen)
 
   if (!isopen) return -EBADF;
 
-// Lock the direcrtory and do any required tracing
+// Lock the directory and do any required tracing
 //
   if (!dh)  {
      XrdHdfsSys::Emsg(epname,error,EBADF,"read directory",fname);
@@ -214,7 +237,47 @@ int XrdHdfsDirectory::Readdir(char * buff, int blen)
    std::string full_name = fileInfo.mName;
    full_name.erase(0, full_name.rfind("/"));
    strlcpy(buff, full_name.c_str(), blen);
+
+// If Xrootd has provided us with a buffer to place stat information in,
+// copy from hdfsFileInfo to struct stat:
+   if (m_stat_buf) {
+      m_stat_buf->st_mode = fileInfo.mPermissions;
+      m_stat_buf->st_mode |= (fileInfo.mKind == kObjectKindDirectory) ? S_IFDIR : S_IFREG;
+      m_stat_buf->st_nlink = (fileInfo.mKind == kObjectKindDirectory) ? 0 : 1;
+      m_stat_buf->st_uid = 1;
+      m_stat_buf->st_gid = 1;
+      m_stat_buf->st_size = (fileInfo.mKind == kObjectKindDirectory) ? 4096 : fileInfo.mSize;
+      m_stat_buf->st_mtime    = fileInfo.mLastMod;
+      m_stat_buf->st_atime    = fileInfo.mLastMod;
+      m_stat_buf->st_ctime    = fileInfo.mLastMod;
+      m_stat_buf->st_dev      = 0;
+      m_stat_buf->st_ino      = 0;
+   }
+
    return XrdOssOK;
+}
+
+/******************************************************************************/
+/*                               S t a t R e t                                */
+/******************************************************************************/
+int XrdHdfsDirectory::StatRet(struct stat *buf)
+{
+#ifndef NODEBUG
+    static const char *epname = "StatRet";
+#endif
+
+  if (!isopen) return -EBADF;
+
+// Lock the directory and do any required tracing
+//
+  if (!dh)  {
+     XrdHdfsSys::Emsg(epname,error,EBADF,"read directory",fname);
+     return -EBADF;
+  }
+
+  m_stat_buf = buf;
+
+  return XrdOssOK;
 }
 
 /******************************************************************************/
@@ -257,11 +320,7 @@ XrdHdfsDirectory::~XrdHdfsDirectory()
   if (dh != NULL && numEntries >= 0) {
     hdfsFreeFileInfo(dh, numEntries);
   }
-#if HADOOP_VERSION >= 20
-  if (fs != NULL) {
-    hdfsDisconnect(fs);
-  }
-#endif
+  hadoop_disconnect(fs);
   if (fname) {
     free(fname);
   }
@@ -290,18 +349,10 @@ bool XrdHdfsFile::Connect(const XrdOucEnv &client)
 {
     if (m_fs)
     {
-        hdfsDisconnect(m_fs);
-        m_fs = NULL;
+        hadoop_disconnect(m_fs);
     }
     const XrdSecEntity *sec = const_cast<XrdOucEnv&>(client).secEnv();
-    if (sec && sec->name)
-    {
-        m_fs = hdfsConnectAsUserNewInstance("default", 0, sec->name);
-    }
-    else
-    {
-        m_fs = hdfsConnectAsUserNewInstance("default", 0, "nobody");
-    }
+    m_fs = hadoop_connect("default", 0, (sec && sec->name) ? sec->name : "nobody");
     return m_fs;
 }
 
@@ -465,12 +516,6 @@ int XrdHdfsFile::Close(long long int *)
       ret = XrdHdfsSys::Emsg(epname, error, errno, "close", fname);
    }
    fh = NULL;
-#if HADOOP_VERSION >= 20
-   if (m_fs != NULL && hdfsDisconnect(m_fs) != 0) {
-      ret = XrdHdfsSys::Emsg(epname, error, errno, "close", fname); 
-   }
-#endif
-   m_fs = NULL;
 
    XrdSysMutexHelper readbuf_lock(readbuf_mutex);
 
@@ -504,9 +549,7 @@ int XrdHdfsFile::Close(long long int *)
 XrdHdfsFile::~XrdHdfsFile()
 {
    if (m_fs && fh) {hdfsCloseFile(m_fs, fh);}
-#if HADOOP_VERSION >= 20
-   if (m_fs) {hdfsDisconnect(m_fs);}
-#endif
+   if (m_fs) {hadoop_disconnect(m_fs);}
    if (fname) {free(fname);}
    if (readbuf) {free(readbuf);}
 }
@@ -816,11 +859,27 @@ int XrdHdfsSys::Stat(const  char    *path,    // In
 //   When the cmsd uses this class, client is NULL.  Within the cmsd
 //   network, things should act as the superuser -- but only for 'stat'
 //   (not Open or OpenDir - those should remain 'nobody'!).
-   const char* sec_name = client ? ExtractAuthName(*client) : "root";
-   hdfsFS fs = hadoop_connect("default", 0, sec_name);
-   if (fs == NULL) {
-      retc = XrdHdfsSys::Emsg(epname, error, EIO, "stat", fname);
-      goto cleanup;
+//
+//   Further, we don't want to connect / disconnect repeatedly for the cmsd;
+//   instead, we keep a static instance.
+   hdfsFS fs = NULL;
+   if (client) {
+      const char* sec_name = ExtractAuthName(*client);
+      fs = hadoop_connect("default", 0, sec_name);
+      if (fs == NULL) {
+         retc = XrdHdfsSys::Emsg(epname, error, EIO, "stat", fname);
+         goto cleanup;
+      }
+   } else {
+      XrdSysMutexHelper fs_lock(m_fs_mutex);
+      if (m_cmsd_fs == NULL) {
+         m_cmsd_fs = hadoop_connect("default", 0, "root");
+         if (m_cmsd_fs == NULL) {
+            retc = XrdHdfsSys::Emsg(epname, error, EIO, "stat", fname);
+            goto cleanup;
+         }
+      }
+      fs = m_cmsd_fs;
    }
 
    fileInfo = hdfsGetPathInfo(fs, fname);
@@ -850,10 +909,8 @@ int XrdHdfsSys::Stat(const  char    *path,    // In
 // All went well
 //
 cleanup:
-#if HADOOP_VERSION >= 20
-   if (fs)
-      hdfsDisconnect(fs);
-#endif
+   if (client && fs)
+      hadoop_disconnect(fs);
    if (fname)
       free(fname);
    return retc;
