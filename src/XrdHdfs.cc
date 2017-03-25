@@ -22,6 +22,8 @@ const char *XrdHdfsSVNID = "$Id$";
 #include <sys/param.h>
 #include <sys/stat.h>
 
+#include <map>
+
 #include "XrdVersion.hh"
 #include "XrdSys/XrdSysError.hh"
 #include "XrdSys/XrdSysHeaders.hh"
@@ -33,9 +35,7 @@ const char *XrdHdfsSVNID = "$Id$";
 #include "XrdSec/XrdSecInterface.hh"
 #include "XrdHdfs.hh"
 
-#ifdef AIX
-#include <sys/mode.h>
-#endif
+#define REUSE_CONNECTION 1
 
 // Static copy of filesystem for when we're used by the cmsd.
 XrdSysMutex XrdHdfsSys::m_fs_mutex;
@@ -43,15 +43,33 @@ hdfsFS XrdHdfsSys::m_cmsd_fs = NULL;
 
 namespace
 {
-#if HADOOP_VERSION < 20
-   const char *hdfs_19_groups[] = { "nobody" };
-#endif
-   hdfsFS hadoop_connect(const char* a, int b, const char* c)
+   XrdSysMutex g_fs_mutex;
+   std::map<std::string, hdfsFS> g_fs_map;
+
+   hdfsFS hadoop_connect(const char* instance, int port, const char* username)
    {
-#if HADOOP_VERSION < 20
-      return hdfsConnectAsUser(a, b, c, hdfs_19_groups, 1);
+#ifdef REUSE_CONNECTION
+      XrdSysMutexHelper fs_lock(g_fs_mutex);
+      std::map<std::string, hdfsFS>::iterator iter = g_fs_map.find(username);
+      if (iter != g_fs_map.end()) {
+         return iter->second;
+      }
+      hdfsFS fs = hdfsConnectAsUserNewInstance(instance, port, username);
+      if (fs) {
+         g_fs_map.insert(std::pair<std::string, hdfsFS>(username, fs));
+      }
+      return fs;
 #else
-      return hdfsConnectAsUserNewInstance(a, b, c);
+      return hdfsConnectAsUserNewInstance(instance, port, username);
+#endif
+   }
+
+   void hadoop_disconnect(hdfsFS fs)
+   {
+#ifndef REUSE_CONNECTION
+      if (fs != NULL) {
+         hdfsDisconnect(fs);
+      }
 #endif
    }
 
@@ -302,11 +320,7 @@ XrdHdfsDirectory::~XrdHdfsDirectory()
   if (dh != NULL && numEntries >= 0) {
     hdfsFreeFileInfo(dh, numEntries);
   }
-#if HADOOP_VERSION >= 20
-  if (fs != NULL) {
-    hdfsDisconnect(fs);
-  }
-#endif
+  hadoop_disconnect(fs);
   if (fname) {
     free(fname);
   }
@@ -335,18 +349,10 @@ bool XrdHdfsFile::Connect(const XrdOucEnv &client)
 {
     if (m_fs)
     {
-        hdfsDisconnect(m_fs);
-        m_fs = NULL;
+        hadoop_disconnect(m_fs);
     }
     const XrdSecEntity *sec = const_cast<XrdOucEnv&>(client).secEnv();
-    if (sec && sec->name)
-    {
-        m_fs = hdfsConnectAsUserNewInstance("default", 0, sec->name);
-    }
-    else
-    {
-        m_fs = hdfsConnectAsUserNewInstance("default", 0, "nobody");
-    }
+    m_fs = hadoop_connect("default", 0, (sec && sec->name) ? sec->name : "nobody");
     return m_fs;
 }
 
@@ -510,12 +516,6 @@ int XrdHdfsFile::Close(long long int *)
       ret = XrdHdfsSys::Emsg(epname, error, errno, "close", fname);
    }
    fh = NULL;
-#if HADOOP_VERSION >= 20
-   if (m_fs != NULL && hdfsDisconnect(m_fs) != 0) {
-      ret = XrdHdfsSys::Emsg(epname, error, errno, "close", fname); 
-   }
-#endif
-   m_fs = NULL;
 
    XrdSysMutexHelper readbuf_lock(readbuf_mutex);
 
@@ -549,9 +549,7 @@ int XrdHdfsFile::Close(long long int *)
 XrdHdfsFile::~XrdHdfsFile()
 {
    if (m_fs && fh) {hdfsCloseFile(m_fs, fh);}
-#if HADOOP_VERSION >= 20
-   if (m_fs) {hdfsDisconnect(m_fs);}
-#endif
+   if (m_fs) {hadoop_disconnect(m_fs);}
    if (fname) {free(fname);}
    if (readbuf) {free(readbuf);}
 }
@@ -911,10 +909,8 @@ int XrdHdfsSys::Stat(const  char    *path,    // In
 // All went well
 //
 cleanup:
-#if HADOOP_VERSION >= 20
    if (client && fs)
-      hdfsDisconnect(fs);
-#endif
+      hadoop_disconnect(fs);
    if (fname)
       free(fname);
    return retc;
