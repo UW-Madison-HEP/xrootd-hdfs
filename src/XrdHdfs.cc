@@ -37,6 +37,10 @@ const char *XrdHdfsSVNID = "$Id$";
 #include <sys/mode.h>
 #endif
 
+// Static copy of filesystem for when we're used by the cmsd.
+XrdSysMutex XrdHdfsSys::m_fs_mutex;
+hdfsFS XrdHdfsSys::m_cmsd_fs = NULL;
+
 namespace
 {
 #if HADOOP_VERSION < 20
@@ -120,6 +124,7 @@ XrdHdfsDirectory::XrdHdfsDirectory(const char *tid) : XrdOssDF()
    dirPos = 0;
    isopen = 0;
    fname = 0;
+   m_stat_buf = NULL;
 }
 
 int XrdHdfsDirectory::Opendir(const char *dir_path, XrdOucEnv & client)
@@ -190,7 +195,7 @@ int XrdHdfsDirectory::Readdir(char * buff, int blen)
 
   if (!isopen) return -EBADF;
 
-// Lock the direcrtory and do any required tracing
+// Lock the directory and do any required tracing
 //
   if (!dh)  {
      XrdHdfsSys::Emsg(epname,error,EBADF,"read directory",fname);
@@ -214,7 +219,47 @@ int XrdHdfsDirectory::Readdir(char * buff, int blen)
    std::string full_name = fileInfo.mName;
    full_name.erase(0, full_name.rfind("/"));
    strlcpy(buff, full_name.c_str(), blen);
+
+// If Xrootd has provided us with a buffer to place stat information in,
+// copy from hdfsFileInfo to struct stat:
+   if (m_stat_buf) {
+      m_stat_buf->st_mode = fileInfo.mPermissions;
+      m_stat_buf->st_mode |= (fileInfo.mKind == kObjectKindDirectory) ? S_IFDIR : S_IFREG;
+      m_stat_buf->st_nlink = (fileInfo.mKind == kObjectKindDirectory) ? 0 : 1;
+      m_stat_buf->st_uid = 1;
+      m_stat_buf->st_gid = 1;
+      m_stat_buf->st_size = (fileInfo.mKind == kObjectKindDirectory) ? 4096 : fileInfo.mSize;
+      m_stat_buf->st_mtime    = fileInfo.mLastMod;
+      m_stat_buf->st_atime    = fileInfo.mLastMod;
+      m_stat_buf->st_ctime    = fileInfo.mLastMod;
+      m_stat_buf->st_dev      = 0;
+      m_stat_buf->st_ino      = 0;
+   }
+
    return XrdOssOK;
+}
+
+/******************************************************************************/
+/*                               S t a t R e t                                */
+/******************************************************************************/
+int XrdHdfsDirectory::StatRet(struct stat *buf)
+{
+#ifndef NODEBUG
+    static const char *epname = "StatRet";
+#endif
+
+  if (!isopen) return -EBADF;
+
+// Lock the directory and do any required tracing
+//
+  if (!dh)  {
+     XrdHdfsSys::Emsg(epname,error,EBADF,"read directory",fname);
+     return -EBADF;
+  }
+
+  m_stat_buf = buf;
+
+  return XrdOssOK;
 }
 
 /******************************************************************************/
@@ -816,11 +861,27 @@ int XrdHdfsSys::Stat(const  char    *path,    // In
 //   When the cmsd uses this class, client is NULL.  Within the cmsd
 //   network, things should act as the superuser -- but only for 'stat'
 //   (not Open or OpenDir - those should remain 'nobody'!).
-   const char* sec_name = client ? ExtractAuthName(*client) : "root";
-   hdfsFS fs = hadoop_connect("default", 0, sec_name);
-   if (fs == NULL) {
-      retc = XrdHdfsSys::Emsg(epname, error, EIO, "stat", fname);
-      goto cleanup;
+//
+//   Further, we don't want to connect / disconnect repeatedly for the cmsd;
+//   instead, we keep a static instance.
+   hdfsFS fs = NULL;
+   if (client) {
+      const char* sec_name = ExtractAuthName(*client);
+      fs = hadoop_connect("default", 0, sec_name);
+      if (fs == NULL) {
+         retc = XrdHdfsSys::Emsg(epname, error, EIO, "stat", fname);
+         goto cleanup;
+      }
+   } else {
+      XrdSysMutexHelper fs_lock(m_fs_mutex);
+      if (m_cmsd_fs == NULL) {
+         m_cmsd_fs = hadoop_connect("default", 0, "root");
+         if (m_cmsd_fs == NULL) {
+            retc = XrdHdfsSys::Emsg(epname, error, EIO, "stat", fname);
+            goto cleanup;
+         }
+      }
+      fs = m_cmsd_fs;
    }
 
    fileInfo = hdfsGetPathInfo(fs, fname);
@@ -851,7 +912,7 @@ int XrdHdfsSys::Stat(const  char    *path,    // In
 //
 cleanup:
 #if HADOOP_VERSION >= 20
-   if (fs)
+   if (client && fs)
       hdfsDisconnect(fs);
 #endif
    if (fname)

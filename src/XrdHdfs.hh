@@ -42,6 +42,7 @@ public:
         int         Opendir(const char *dirName, XrdOucEnv &);
         int         Readdir(char *buff, int blen);
         int         Close(long long *retsz=0);
+        int         StatRet(struct stat *buff);
 
                     XrdHdfsDirectory(const char *tid=0);
 
@@ -56,6 +57,11 @@ int            dirPos;
 char          *fname;
 const char    *tident;
 int  isopen;
+
+// A pointer to the current entry in the directory; if set non-null, we
+// automatically populate this with the entry's "Stat" information.  This allows
+// Xrootd to save a corresponding call to `Stat` for each directory entry.
+struct stat *m_stat_buf;
 };
 
 /******************************************************************************/
@@ -204,6 +210,11 @@ int    ConfigProc(const char *);
 int    ConfigXeq(char *, XrdOucStream &);
 int    xnml(XrdOucStream &Config);
 
+// Static instance of the HDFS filesystem; this is used by the cmsd in order
+// to avoid opening / closing the filesystem repeatedly (reduces the number of
+// new connections to the namenode).
+static XrdSysMutex m_fs_mutex;
+static hdfsFS m_cmsd_fs;
 
 };
 #endif
