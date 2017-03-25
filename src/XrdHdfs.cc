@@ -140,7 +140,7 @@ XrdHdfsDirectory::XrdHdfsDirectory(const char *tid) : XrdOssDF()
    dh = (hdfsFileInfo*)NULL;
    numEntries = 0;
    dirPos = 0;
-   isopen = 0;
+   isopen = false;
    fname = 0;
    m_stat_buf = NULL;
 }
@@ -179,12 +179,13 @@ int XrdHdfsDirectory::Opendir(const char *dir_path, XrdOucEnv & client)
    dirPos = 0;
 
 // Open the directory and get it's id
+// HDFS returns NULL but sets errno to 0 if the directory exists and is empty.
 //
-   if (!(dh = hdfsListDirectory(fs, fname, &numEntries))) {
-      isopen = 0;
-      return (errno <= 0) ? -1 : -errno;
+   if (!(dh = hdfsListDirectory(fs, fname, &numEntries)) && errno) {
+      isopen = false;
+      return (errno < 0) ? -EIO : -errno;
    }
-   isopen = 1;
+   isopen = true;
 
 // All done
 //
@@ -213,19 +214,17 @@ int XrdHdfsDirectory::Readdir(char * buff, int blen)
 
   if (!isopen) return -EBADF;
 
-// Lock the directory and do any required tracing
+// Check if we are at EOF (once there we stay there)
 //
+   if (dirPos >= numEntries) {
+     *buff = '\0';
+     return 0;
+   }
+
   if (!dh)  {
      XrdHdfsSys::Emsg(epname,error,EBADF,"read directory",fname);
      return -EBADF;
   }
-
-// Check if we are at EOF (once there we stay there)
-//
-   if (dirPos == numEntries) {
-     *buff = '\0';
-     return 0;
-   }
 
 // Read the next directory entry
 //
@@ -308,10 +307,10 @@ int XrdHdfsDirectory::Close(long long *retsz)
      free(fname);
      fname = NULL;
    }
-   dh = (hdfsFileInfo *)0; 
+   dh = NULL;
    numEntries = 0;
    dirPos = 0;
-   isopen = 0;
+   isopen = false;
    return 0;
 }
 

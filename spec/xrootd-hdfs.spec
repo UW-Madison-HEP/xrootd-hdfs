@@ -1,5 +1,5 @@
 Name: xrootd-hdfs
-Version: 1.9.0
+Version: 1.9.1
 Release: 1%{?dist}
 Summary: HDFS plugin for xrootd
 
@@ -70,6 +70,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/XrdHdfs.hh
 
 %changelog
+* Sat Mar 25 2017 Brian Bockelman <bbockelm@cse.unl.edu> - 1.9.1-1
+- Fix for listing empty directories.
+
 * Fri Mar 24 2017 Brian Bockelman <bbockelm@cse.unl.edu> - 1.9.0-1
 - Implement xrootd's autostat protocol.
 - Implement per-user connection caching.

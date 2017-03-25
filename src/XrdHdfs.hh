@@ -56,7 +56,7 @@ int            numEntries;
 int            dirPos;
 char          *fname;
 const char    *tident;
-int  isopen;
+bool           isopen;
 
 // A pointer to the current entry in the directory; if set non-null, we
 // automatically populate this with the entry's "Stat" information.  This allows
