@@ -265,14 +265,14 @@ int XrdHdfsDirectory::StatRet(struct stat *buf)
     static const char *epname = "StatRet";
 #endif
 
-  if (!isopen) return -EBADF;
+   if (!isopen) return -EBADF;
 
-// Lock the directory and do any required tracing
-//
-  if (!dh)  {
-     XrdHdfsSys::Emsg(epname,error,EBADF,"read directory",fname);
-     return -EBADF;
-  }
+   // Check for a null directory handle; this will occur if this object is
+   // invalid, or if it is valid but is an empty directory.
+   if ((numEntries > 0) && !dh)  {
+      XrdHdfsSys::Emsg(epname,error,EBADF,"read directory",fname);
+      return -EBADF;
+   }
 
   m_stat_buf = buf;
 
