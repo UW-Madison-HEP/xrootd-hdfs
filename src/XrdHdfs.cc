@@ -181,6 +181,7 @@ int XrdHdfsDirectory::Opendir(const char *dir_path, XrdOucEnv & client)
 // Open the directory and get it's id
 // HDFS returns NULL but sets errno to 0 if the directory exists and is empty.
 //
+   errno = 0;
    if (!(dh = hdfsListDirectory(fs, fname, &numEntries)) && errno) {
       isopen = false;
       return (errno < 0) ? -EIO : -errno;
