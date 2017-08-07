@@ -75,7 +75,7 @@ rm -rf $RPM_BUILD_ROOT
 
 * Wed Aug 02 2017 Marian Zvada <marian.zvada@cern.ch> - 1.9.2-1
 - Fixes a minor bug for reporting error codes when listing directories fails
-- Previously, it was possible for the error state to leak between calls to libhdfs
+  Previously, it was possible for the error state to leak between calls to libhdfs
 
 * Sat Mar 25 2017 Brian Bockelman <bbockelm@cse.unl.edu> - 1.9.1-1
 - Fix for listing empty directories.
