@@ -1,6 +1,6 @@
 Name: xrootd-hdfs
-Version: 1.9.2
-Release: 2%{?dist}
+Version: 2.0.0
+Release: 0%{?dist}
 Summary: HDFS plugin for xrootd
 
 Group: System Environment/Development
@@ -33,6 +33,7 @@ Group: System Environment/Development
 %setup -q
 
 %build
+sed -i XrdHdfs.cc 's|@devel@|%{version}|'
 %cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo .
 make VERBOSE=1 %{?_smp_mflags}
 
@@ -70,6 +71,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/XrdHdfs.hh
 
 %changelog
+* Tue Mar 06 2018 Brian Bockelman <bbockelm@cse.unl.edu> - 2.0.0-1
+- Add full support for writing files into HDFS.
+
 * Mon Aug 07 2017 Marian Zvada <marian.zvada@cern.ch> - 1.9.2-2
 - bumped version while changing Conflicts directive to Requires xrootd 4.6.1
 
