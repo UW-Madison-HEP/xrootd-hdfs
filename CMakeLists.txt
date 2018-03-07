@@ -46,7 +46,7 @@ install(
   LIBRARY DESTINATION ${LIB_INSTALL_DIR} )
 
 install(
-  PROGRAMS xrootd_hdfs_envcheck
+  TARGETS xrootd_hdfs_envcheck
   DESTINATION bin)
 
 install(

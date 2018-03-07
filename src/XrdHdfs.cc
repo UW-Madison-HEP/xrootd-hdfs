@@ -8,8 +8,6 @@
 /*               DE-AC03-76-SFO0515 with the Deprtment of Energy              */
 /******************************************************************************/
 
-const char *XrdHdfsSVNID = "$Id$";
-
 #include <sys/types.h>
 #include <unistd.h>
 #include <dirent.h>
@@ -73,10 +71,11 @@ namespace
 #endif
    }
 
-const char* ExtractAuthName(const XrdOucEnv& client) {
-
-    const XrdSecEntity *sec = const_cast<XrdOucEnv&>(client).secEnv();
-    if (sec && sec->name)
+const char *
+ExtractAuthName(const XrdOucEnv *client)
+{
+    const XrdSecEntity *sec;
+    if (client && (sec = client->secEnv()) && sec->name)
     {
         return sec->name;
     }
@@ -84,6 +83,13 @@ const char* ExtractAuthName(const XrdOucEnv& client) {
     {
         return "nobody";
     }
+}
+
+hdfsFS hadoop_connect(const XrdOucEnv *client)
+{
+    const char *username = ExtractAuthName(client);
+    errno = 0;
+    return hadoop_connect("default", 0, username);
 }
 
 }
@@ -134,16 +140,15 @@ XrdOss *XrdOssGetStorageSystem(XrdOss       *native_oss,
 /******************************************************************************/
 /*                                  O p e n d i r                             */
 /******************************************************************************/
-XrdHdfsDirectory::XrdHdfsDirectory(const char *tid) : XrdOssDF()
-{
-   fs = NULL;
-   dh = (hdfsFileInfo*)NULL;
-   numEntries = 0;
-   dirPos = 0;
-   isopen = false;
-   fname = 0;
-   m_stat_buf = NULL;
-}
+XrdHdfsDirectory::XrdHdfsDirectory(const char *tid) : XrdOssDF(),
+   fs(NULL),
+   dh(NULL),
+   numEntries(0),
+   dirPos(0),
+   fname(NULL),
+   isopen(false),
+   m_stat_buf(NULL)
+{}
 
 int XrdHdfsDirectory::Opendir(const char *dir_path, XrdOucEnv & client)
 /*
@@ -154,27 +159,25 @@ int XrdHdfsDirectory::Opendir(const char *dir_path, XrdOucEnv & client)
   Output:   Returns XrdOssOK upon success, otherwise (-errno).
 */
 {
-   int retc;
+   static const char *epname = "Opendir";
+   int retc = XrdOssOK;
 
 // Return an error if we have already opened
    if (isopen) return -EINVAL;
 
 // Get the security name, and connect with it
-   const char* sec_name = ExtractAuthName(client);
-   fs = hadoop_connect("default", 0, sec_name);
+   hdfsFS fs = hadoop_connect(&client);
+   if (!fs) {
+     retc = XrdHdfsSys::Emsg(epname, error, EIO, "open directory", fname);
+     goto cleanup;
+   }
 
 
 // Set up values for this directory object
 //
-   if (XrdHdfsSS.the_N2N) {
-       char actual_path[XrdHdfsMAX_PATH_LEN+1];
-       if ((retc = (XrdHdfsSS.the_N2N)->lfn2pfn(dir_path, actual_path, sizeof(actual_path)))) {
-          (XrdHdfsSS.eDest)->Say("Cannot find a N2N mapping for ", dir_path, "; using path directly.");
-          fname = strdup(dir_path);
-       }
-          else fname = strdup(actual_path);
-   } else {
-       fname = strdup(dir_path);
+   if (!(fname = XrdHdfsSS.GetRealPath(dir_path))) {
+       retc = -ENOMEM;
+       goto cleanup;
    }
    dirPos = 0;
 
@@ -184,13 +187,15 @@ int XrdHdfsDirectory::Opendir(const char *dir_path, XrdOucEnv & client)
    errno = 0;
    if (!(dh = hdfsListDirectory(fs, fname, &numEntries)) && errno) {
       isopen = false;
-      return (errno < 0) ? -EIO : -errno;
+      retc = (errno < 0) ? -EIO : -errno;
+      goto cleanup;
    }
    isopen = true;
 
 // All done
 //
-   return XrdOssOK;
+cleanup:
+   return retc;
 }
 
 /******************************************************************************/
@@ -396,19 +401,9 @@ int XrdHdfsFile::Open(const char               *path,      // In
    if (fh != NULL)
       return -EINVAL;
 
-   int retc;
-   if (XrdHdfsSS.the_N2N) {
-       char actual_path[XrdHdfsMAX_PATH_LEN+1];
-       if ((retc = (XrdHdfsSS.the_N2N)->lfn2pfn(path, actual_path, sizeof(actual_path)))) {
-          (XrdHdfsSS.eDest)->Say("Cannot find a N2N mapping for ", path, "; using path directly.");
-          fname = strdup(path);
-       }
-       else fname = strdup(actual_path);
-   } else {
-       fname = strdup(path);
-   }
+   fname = XrdHdfsSS.GetRealPath(path);
 
-   (XrdHdfsSS.eDest)->Say("File we will access: ", fname);
+   XrdHdfsSS.Say("File we will access: ", fname);
 
 // Allocate readbuf
 //
@@ -419,7 +414,7 @@ int XrdHdfsFile::Open(const char               *path,      // In
        readbuf = (char *)malloc(readbuf_size);
        if( !readbuf ) {
            readbuf_size = 0;
-           (XrdHdfsSS.eDest)->Say("Insufficient memory to allocate read-ahead buffer for ", path);
+           XrdHdfsSS.Say("Insufficient memory to allocate read-ahead buffer for ", path);
        }
    }
 
@@ -447,13 +442,6 @@ int XrdHdfsFile::Open(const char               *path,      // In
    default:           open_flag = O_RDONLY; break;
    }
 
-   // HDFS does not support read-write mode.
-/*
-   if (openMode & O_RDWR) {
-       return XrdHdfsSys::Emsg(epname,error,ENOTSUP, "Read-write mode not"
-           " supported by HDFS.",path);
-   }
-*/
 // Prepare to create or open the file, as needed
 //
    if (openMode & O_TRUNC) {
@@ -529,7 +517,7 @@ int XrdHdfsFile::Close(long long int *)
                 readbuf_misses,readbuf_hits,readbuf_partial_hits,readbuf_bypassed,
                 readbuf_bytes_used,readbuf_bytes_loaded,
                 pct_buf_used);
-       (XrdHdfsSS.eDest)->Say("Readahead buffer stats for ",fname," : ",stats);
+       XrdHdfsSS.Say("Readahead buffer stats for ", fname, " : ", stats);
 
       free(readbuf);
       readbuf = 0;
@@ -698,13 +686,6 @@ ssize_t XrdHdfsFile::Write(const void *buff,    // In
 {
    static const char *epname = "write";
 
-// Make sure the offset is not too large
-//
-#if _FILE_OFFSET_BITS!=64
-   if (offset >  0x000000007fffffff)
-      return XrdHdfsSys::Emsg(epname, error, EFBIG, "write", fname);
-#endif
-
     if (offset != m_nextoff)
     {
         return XrdHdfsSys::Emsg(epname, error, ENOTSUP, "Out-of-order writes not"
@@ -816,7 +797,31 @@ int XrdHdfsSys::Init(XrdSysLogger *lp, const char *configfn)
 /*                            g e t V e r s i o n                             */
 /******************************************************************************/
 
-const char *XrdHdfsSys::getVersion() {return XrdVERSION;}
+const char *XrdHdfsSys::getVersion() {return "@devel@";}
+
+void
+XrdHdfsSys::Say(char const *msg, char const *x, char const *y, char const *z)
+{
+    eDest->Say(msg, x, y, z);
+}
+
+char *
+XrdHdfsSys::GetRealPath(const char *path)
+{
+   char *fname;
+   if (the_N2N) {
+       char actual_path[XrdHdfsMAX_PATH_LEN+1];
+       if ((the_N2N)->lfn2pfn(path, actual_path, sizeof(actual_path))) {
+          eDest->Say("Cannot find a N2N mapping for ", path, "; using path directly.");
+          fname = strdup(path);
+       } else {
+          fname = strdup(actual_path);
+       }
+   } else {
+       fname = strdup(path);
+   }
+   return fname;
+}
 
 /******************************************************************************/
 /*                                  S t a t                                   */
@@ -843,16 +848,9 @@ int XrdHdfsSys::Stat(const  char    *path,    // In
    char * fname;
    hdfsFileInfo * fileInfo = NULL;
 
-   if (XrdHdfsSS.the_N2N) {
-       char actual_path[XrdHdfsMAX_PATH_LEN+1];
-       if ((XrdHdfsSS.the_N2N)->lfn2pfn(path, actual_path, sizeof(actual_path))) {
-          (XrdHdfsSS.eDest)->Say("Cannot find a N2N mapping for ", path, "; using path directly.");
-          fname = strdup(path);
-       } else {
-          fname = strdup(actual_path);
-       }
-   } else {
-       fname = strdup(path);
+   fname = GetRealPath(path);
+   if (!fname) {
+       retc = XrdHdfsSys::Emsg(epname, error, ENOMEM, "stat", path);
    }
 
 // Get the security name, and connect with it
@@ -864,8 +862,7 @@ int XrdHdfsSys::Stat(const  char    *path,    // In
 //   instead, we keep a static instance.
    hdfsFS fs = NULL;
    if (client) {
-      const char* sec_name = ExtractAuthName(*client);
-      fs = hadoop_connect("default", 0, sec_name);
+      fs = hadoop_connect(client);
       if (fs == NULL) {
          retc = XrdHdfsSys::Emsg(epname, error, EIO, "stat", fname);
          goto cleanup;
@@ -917,10 +914,297 @@ cleanup:
 }
 
 
+int
+XrdHdfsSys::Chmod(const char *req_fname, mode_t mode, XrdOucEnv *envp)
+{
+    static const char *epname = "chmod";
+    int retc = XrdOssOK;
+    hdfsFS fs = NULL;
+
+    char *fname = GetRealPath(req_fname);
+    if (!fname) {
+        retc = XrdHdfsSys::Emsg(epname, error, ENOMEM, "chmod", req_fname);
+        goto cleanup;
+    }
+
+    fs = hadoop_connect(envp);
+    if (fs == NULL) {
+        retc = XrdHdfsSys::Emsg(epname, error, EIO, "chmod", fname);
+        goto cleanup;
+    }
+
+    errno = 0;
+    if (-1 == hdfsChmod(fs, fname, mode)) {
+        retc = XrdHdfsSys::Emsg(epname, error, errno ? errno : EIO, "chmod", fname);
+        goto cleanup;
+    }
+
+cleanup:
+    hadoop_disconnect(fs);
+    free(fname);
+    return retc;
+}
+
+int
+XrdHdfsSys::Mkdir(const char *req_path, mode_t mode, int mkpath,
+                  XrdOucEnv *envp)
+{
+    static const char *epname = "mkdir";
+    int retc = XrdOssOK;
+    hdfsFS fs = NULL;
+
+    char *path = GetRealPath(req_path);
+    if (!path) {
+        retc = XrdHdfsSys::Emsg(epname, error, ENOMEM, "mkdir", req_path);
+        goto cleanup;
+    }
+
+    fs = hadoop_connect(envp);
+    if (fs == NULL) {
+        retc = XrdHdfsSys::Emsg(epname, error, EIO, "mkdir", path);
+        goto cleanup;
+    }
+
+    // Unfortunately, there's no way to avoid recursive directory creation,
+    // so we must implement the parent-existence logic ourselves.
+    if (!mkpath) {
+        // First, take out trailing slashes.
+        size_t len = strlen(path);
+        do {
+            len--;
+            if (!len) {
+                // We were asked to make the root directory.  Simply return.
+                goto cleanup;
+            }
+            if (path[len] == '/') {
+                path[len] = '\0';
+            }
+        } while (path[len] != '\0');
+        char *parent_dir = strrchr(path, '/');
+        if (parent_dir && (parent_dir != path)) {
+            parent_dir++;  // Trailing-slash logic above guarantees there
+                           // is one non-null character after parent_dir
+            char old_value = *parent_dir;
+            *parent_dir = '\0';
+            errno = 0;
+            int retval = hdfsExists(fs, path);
+            *parent_dir = old_value;
+            if (!retval) {
+                retc = XrdHdfsSys::Emsg(epname, error, errno ? errno : ENOENT,
+                                        "mkdir", path);
+                goto cleanup;
+            }
+        }
+    }
+
+    errno = 0;
+    if (-1 == hdfsCreateDirectory(fs, path)) {
+        retc = XrdHdfsSys::Emsg(epname, error, errno ? errno : EIO, "mkdir", path);
+        goto cleanup;
+    }
+
+    errno = 0;
+    if (mode && (-1 == hdfsChmod(fs, path, mode))) {
+        retc = XrdHdfsSys::Emsg(epname, error, errno ? errno : EIO, "chmod",
+                                path);
+        goto cleanup;
+    }
+
+cleanup:
+    hadoop_disconnect(fs);
+    free(path);
+    return retc;
+}
+
+int
+XrdHdfsSys::Remdir(const char *req_path, int /*opts*/, XrdOucEnv *envp)
+{
+    static const char *epname = "rmdir";
+    int retc = XrdOssOK;
+    hdfsFS fs = NULL;
+
+    char *path = GetRealPath(req_path);
+    if (!path) {
+        retc = XrdHdfsSys::Emsg(epname, error, ENOMEM, "rmdir", req_path);
+        goto cleanup;
+    }
+
+    fs = hadoop_connect(envp);
+    if (fs == NULL) {
+        retc = XrdHdfsSys::Emsg(epname, error, EIO, "rmdir", path);
+        goto cleanup;
+    }
+
+    // TODO: Bail out if the parent directory doesn't exist and mkpath isn't set.
+    errno = 0;
+    if (-1 == hdfsDelete(fs, path, 0)) {
+        retc = XrdHdfsSys::Emsg(epname, error, errno ? errno : EIO, "rmdir", path);
+        goto cleanup;
+    }
+
+cleanup:
+    hadoop_disconnect(fs);
+    free(path);
+    return retc;
+}
+
+int
+XrdHdfsSys::Rename(const char *req_src, const char *req_dest,
+                   XrdOucEnv *envp_src, XrdOucEnv * /*envp_dest*/)
+{
+    static const char *epname = "rename";
+    int retc = XrdOssOK;
+    hdfsFS fs = NULL;
+
+    char *src = GetRealPath(req_src), *dest = NULL;
+    if (!src) {
+        retc = XrdHdfsSys::Emsg(epname, error, ENOMEM, "rename", req_src);
+        goto cleanup;
+    }
+    if (!(dest = GetRealPath(req_dest))) {
+        retc = XrdHdfsSys::Emsg(epname, error, ENOMEM, "rename", req_dest);
+        goto cleanup;
+    }
+
+    // NOTE: hdfsMove has the concept of moving between filesystems.  Not clear if it has
+    // the right semantics for the XRootD use case, however.
+    fs = hadoop_connect(envp_src);
+    if (fs == NULL) {
+        retc = XrdHdfsSys::Emsg(epname, error, EIO, "rename", src);
+        goto cleanup;
+    }
+
+    errno = 0;
+    if (-1 == hdfsRename(fs, src, dest)) {
+        retc = XrdHdfsSys::Emsg(epname, error, errno ? errno : EIO, "rmdir", src);
+        goto cleanup;
+    }
+
+cleanup:
+    hadoop_disconnect(fs);
+    free(src);
+    free(dest);
+    return retc;
+}
+
+int
+XrdHdfsSys::Truncate(const char *req_path, long long unsigned int newsize, XrdOucEnv *envp)
+{
+    static const char *epname = "truncate";
+    int retc = XrdOssOK;
+    hdfsFS fs = NULL;
+    hdfsFile fp = NULL;
+
+    char *path = GetRealPath(req_path);
+    if (!path) {
+        retc = XrdHdfsSys::Emsg(epname, error, ENOMEM, "truncate", req_path);
+        goto cleanup;
+    }
+
+    fs = hadoop_connect(envp);
+    if (fs == NULL) {
+        retc = XrdHdfsSys::Emsg(epname, error, EIO, "truncate", path);
+        goto cleanup;
+    }
+
+    errno = 0;
+    fp = hdfsOpenFile(fs, path, O_WRONLY, 0, 0, 0);
+    if (NULL == fp) {
+        retc = XrdHdfsSys::Emsg(epname, error, errno, "truncate", path);
+        goto cleanup;
+    }
+
+cleanup:
+    if (fs && fp) {hdfsCloseFile(fs, fp);}
+    hadoop_disconnect(fs);
+    free(path);
+    return retc;
+}
+
+int
+XrdHdfsSys::Unlink(const char *req_path, int /*opts*/, XrdOucEnv *envp)
+{
+    static const char *epname = "unlink";
+    int retc = XrdOssOK;
+    hdfsFS fs = NULL;
+
+    char *path = GetRealPath(req_path);
+    if (!path) {
+        retc = XrdHdfsSys::Emsg(epname, error, ENOMEM, "unlink", req_path);
+        goto cleanup;
+    }
+
+    fs = hadoop_connect(envp);
+    if (fs == NULL) {
+        retc = XrdHdfsSys::Emsg(epname, error, EIO, "unlink", path);
+        goto cleanup;
+    }
+
+    errno = 0;
+    if (-1 == hdfsDelete(fs, path, 0)) {
+        if (errno == EIO) {
+            errno = 0;
+            if (-1 == hdfsExists(fs, path)) {
+                if (!errno) {
+                    errno = ENOENT;
+                }
+            }
+        }
+        retc = XrdHdfsSys::Emsg(epname, error, errno ? errno : EIO, "unlink", path);
+        goto cleanup;
+    }
+
+cleanup:
+    hadoop_disconnect(fs);
+    free(path);
+    return retc;
+}
+
+int
+XrdHdfsSys::Create(const char *tident, const char *req_path, mode_t mode,
+                   XrdOucEnv &envp, int opts)
+{
+    static const char *epname = "create";
+    int retc = XrdOssOK;
+    hdfsFS fs = NULL;
+    hdfsFile fp = NULL;
+
+    char *path = GetRealPath(req_path);
+    if (!path) {
+        retc = XrdHdfsSys::Emsg(epname, error, ENOMEM, "create", req_path);
+        goto cleanup;
+    }
+
+    fs = hadoop_connect(&envp);
+    if (fs == NULL) {
+        retc = XrdHdfsSys::Emsg(epname, error, EIO, "create", path);
+        goto cleanup;
+    }
+
+    errno = 0;
+    fp = hdfsOpenFile(fs, path, O_WRONLY, 0, 0, 0);
+    if (NULL == fp) {
+        retc = XrdHdfsSys::Emsg(epname, error, errno, "create", path);
+        goto cleanup;
+    }
+
+    if (-1 == hdfsChmod(fs, path, mode)) {
+        retc = XrdHdfsSys::Emsg(epname, error, errno ? errno : EIO, "create",
+                                path);
+        goto cleanup;
+    }
+
+cleanup:
+    if (fs && fp) {hdfsCloseFile(fs, fp);}
+    hadoop_disconnect(fs);
+    free(path);
+    return retc;
+}
+
+
 /******************************************************************************/
 /*                                  E m s g                                   */
 /******************************************************************************/
-
 int XrdHdfsSys::Emsg(const char    *pfx,    // Message prefix value
                        XrdOucErrInfo &einfo,  // Place to put text & error code
                        int            ecode,  // The error code

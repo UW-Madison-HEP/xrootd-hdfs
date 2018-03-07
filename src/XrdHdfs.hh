@@ -33,7 +33,7 @@ class XrdSysLogger;
 /******************************************************************************/
 /*                 X r d H d f s D i r e c t o r y                  */
 /******************************************************************************/
-  
+ 
 class XrdHdfsDirectory : public XrdOssDF
 {
 public:
@@ -160,10 +160,10 @@ public:
 
 // Other Functions
 //
-        int            Chmod(const char *, mode_t) {return -ENOTSUP;}
-        int            Chmod(const char*, mode_t, XrdOucEnv*) {return -ENOTSUP;}
+        int            Chmod(const char*, mode_t, XrdOucEnv* envp=NULL);
 
-        int            Create(const char *, const char *, mode_t, XrdOucEnv &, int opts=0) {return -ENOTSUP;}
+        int            Create(const char *, const char *, mode_t, XrdOucEnv &,
+                              int opts=0);
 
         int            Init(XrdSysLogger *, const char *);
 
@@ -171,38 +171,39 @@ public:
 
 const   char          *getVersion();
 
-        int            Mkdir(const char *, mode_t, int) {return -ENOTSUP;}
-        int            Mkdir(const char*, mode_t, int, XrdOucEnv*) {return -ENOTSUP;}
+        int            Mkdir(const char *path, mode_t mode, int mkpath=0,
+                             XrdOucEnv *envp=NULL);
 
-        int            Remdir(const char *) {return -ENOTSUP;}
-        int            Remdir(const char *, int) {return -ENOTSUP;}
-        int            Remdir(const char*, int, XrdOucEnv*) {return -ENOTSUP;}
+        int            Remdir(const char*, int Opts=0, XrdOucEnv *envp=NULL);
 
-        int            Rename(const char *, const char *) {return -ENOTSUP;}
-        int            Rename(const char*, const char*, XrdOucEnv*, XrdOucEnv*) {return -ENOTSUP;}
+        int            Rename(const char*, const char*,
+                              XrdOucEnv *envp_src=NULL,
+                              XrdOucEnv *envp_dest=NULL);
 
         int            Stat(const char *, struct stat *, int resonly=0, XrdOucEnv* env=0);
 
-        int            Truncate(const char *, unsigned long long) {return -ENOTSUP;}
-        int            Truncate(const char*, long long unsigned int, XrdOucEnv*) {return -ENOTSUP;}
+        int            Truncate(const char*, long long unsigned int,
+                                XrdOucEnv *envp=NULL);
 
-        int            Unlink(const char *) {return -ENOTSUP;}
-        int            Unlink(const char *, int) {return -ENOTSUP;}
-        int            Unlink(const char*, int, XrdOucEnv*) {return -ENOTSUP;}
+        int            Unlink(const char*, int Opts=0, XrdOucEnv *envp=NULL);
 
 static  int            Emsg(const char *, XrdOucErrInfo&, int, const char *x,
                             const char *y="");
 
-char             *N2N_Lib;   // -> Name2Name Library Path
-char             *N2N_Parms; // -> Name2Name Object Parameters
-XrdOucName2Name  *the_N2N;   // -> File mapper object
-const char       *ConfigFN;  // Pointer to the configuration filename
-XrdSysError      *eDest;
+        void           Say(const char *, const char *x="", const char *y="",
+                           const char *z="");
+
+char * GetRealPath(const char *);  // Given a requested pathname, translate it to the HDFS path.  Caller must free() returned space.
 
 XrdHdfsSys() : XrdOss() {}
 virtual ~XrdHdfsSys() {}
 
 private:
+char             *N2N_Lib;   // -> Name2Name Library Path
+char             *N2N_Parms; // -> Name2Name Object Parameters
+XrdOucName2Name  *the_N2N;   // -> File mapper object
+const char       *ConfigFN;  // Pointer to the configuration filename
+XrdSysError      *eDest;
 
 int    Configure(const char *);
 int    ConfigN2N();
