@@ -9,15 +9,13 @@ URL: https://github.com/bbockelm/xrootd-hdfs
 # Generated from:
 # git archive --format=tgz --prefix=%{name}-%{version}/ v%{version} > %{name}-%{version}.tar.gz
 Source0: %{name}-%{version}.tar.gz
-BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 BuildRequires: xrootd-devel >= 1:4.6
 BuildRequires: xrootd-server-devel >= 1:4.6
 BuildRequires: cmake
-BuildRequires: hadoop-libhdfs >= 2.0.0+545-1.cdh4.1.1
-BuildRequires: java7-devel
+BuildRequires: hadoop-libhdfs-devel >= 2.0.0+545-1.cdh4.1.1
+BuildRequires: java-devel = 1:1.7.0
 BuildRequires: jpackage-utils
 Requires: hadoop-client >= 2.0.0+545-1.cdh4.1.1
-Requires: xrootd >= 4.6.0-1
 
 %package devel
 Summary: Development headers for Xrootd HDFS plugin
@@ -38,7 +36,6 @@ sed -i XrdHdfs.cc 's|@devel@|%{version}|'
 make VERBOSE=1 %{?_smp_mflags}
 
 %install
-rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
 
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/xrootd
@@ -54,9 +51,6 @@ rm $RPM_BUILD_ROOT%{_bindir}/xrootd_hdfs_envcheck
 # Notice that I don't call ldconfig in post/postun.  This is because libXrdHdfs
 # is really a loadable module, not a shared lib: it's not linked to all the xrootd
 # libs necessary to load it outside xrootd.
-
-%clean
-rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root,-)
@@ -74,12 +68,22 @@ rm -rf $RPM_BUILD_ROOT
 * Tue Mar 06 2018 Brian Bockelman <bbockelm@cse.unl.edu> - 2.0.0-1
 - Add full support for writing files into HDFS.
 
+* Thu Jan 18 2018 Carl Edquist <edquist@cs.wisc.edu> - 1.9.2-5
+- Drop version conflict for xrootd (SOFTWARE-2682)
+
+* Thu Nov 09 2017 Carl Edquist <edquist@cs.wisc.edu> - 1.9.2-4
+- Update hadoop build requirement (SOFTWARE-2982)
+
+* Tue Nov 07 2017 Carl Edquist <edquist@cs.wisc.edu> - 1.9.2-3
+- Rename java7 dependencies (SOFTWARE-2991)
+- Rebuild against hadoop 2.6.0+ (SOFTWARE-2906)
+
 * Mon Aug 07 2017 Marian Zvada <marian.zvada@cern.ch> - 1.9.2-2
 - bumped version while changing Conflicts directive to Requires xrootd 4.6.1
 
 * Wed Aug 02 2017 Marian Zvada <marian.zvada@cern.ch> - 1.9.2-1
 - Fixes a minor bug for reporting error codes when listing directories fails
-  Previously, it was possible for the error state to leak between calls to libhdfs
+- Previously, it was possible for the error state to leak between calls to libhdfs
 
 * Sat Mar 25 2017 Brian Bockelman <bbockelm@cse.unl.edu> - 1.9.1-1
 - Fix for listing empty directories.
