@@ -1149,6 +1149,14 @@ XrdHdfsSys::Unlink(const char *req_path, int /*opts*/, XrdOucEnv *envp)
 
     errno = 0;
     if (-1 == hdfsDelete(fs, path, 0)) {
+        if (errno == EIO) {
+            errno = 0;
+            if (-1 == hdfsExists(fs, path)) {
+                if (!errno) {
+                    errno = ENOENT;
+                }
+            }
+        }
         retc = XrdHdfsSys::Emsg(epname, error, errno ? errno : EIO, "unlink", path);
         goto cleanup;
     }
