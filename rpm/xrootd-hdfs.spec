@@ -31,7 +31,7 @@ Group: System Environment/Development
 %setup -q
 
 %build
-sed -i XrdHdfs.cc 's|@devel@|%{version}|'
+sed -i 's|@devel@|%{version}|' src/XrdHdfs.cc
 %cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo .
 make VERBOSE=1 %{?_smp_mflags}
 
