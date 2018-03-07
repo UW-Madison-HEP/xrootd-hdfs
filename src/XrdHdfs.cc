@@ -686,13 +686,6 @@ ssize_t XrdHdfsFile::Write(const void *buff,    // In
 {
    static const char *epname = "write";
 
-// Make sure the offset is not too large
-//
-#if _FILE_OFFSET_BITS!=64
-   if (offset >  0x000000007fffffff)
-      return XrdHdfsSys::Emsg(epname, error, EFBIG, "write", fname);
-#endif
-
     if (offset != m_nextoff)
     {
         return XrdHdfsSys::Emsg(epname, error, ENOTSUP, "Out-of-order writes not"
