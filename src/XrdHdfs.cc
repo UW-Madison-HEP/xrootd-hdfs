@@ -35,6 +35,13 @@
 
 #define REUSE_CONNECTION 1
 
+// Set to 1 to have the mkdir create the directory with the mode requested
+// by the user.  This has been problematic as XRootD has requested very restrictive (0700)
+// mode compared to what is typical for a POSIX directory.
+#ifndef MKDIR_PERFORM_CHMOD
+#define MKDIR_PERFORM_CHMOD 0
+#endif
+
 // Static copy of filesystem for when we're used by the cmsd.
 XrdSysMutex XrdHdfsSys::m_fs_mutex;
 hdfsFS XrdHdfsSys::m_cmsd_fs = NULL;
@@ -445,7 +452,7 @@ int XrdHdfsFile::Open(const char               *path,      // In
 // Prepare to create or open the file, as needed
 //
    if (openMode & O_TRUNC) {
-       open_flag = O_TRUNC;
+       open_flag = O_TRUNC | O_WRONLY;
    }
 
 // Setup a new filesystem instance.
@@ -979,7 +986,7 @@ XrdHdfsSys::Mkdir(const char *req_path, mode_t mode, int mkpath,
             if (path[len] == '/') {
                 path[len] = '\0';
             }
-        } while (path[len] != '\0');
+        } while (path[len] == '\0');
         char *parent_dir = strrchr(path, '/');
         if (parent_dir && (parent_dir != path)) {
             parent_dir++;  // Trailing-slash logic above guarantees there
@@ -989,7 +996,7 @@ XrdHdfsSys::Mkdir(const char *req_path, mode_t mode, int mkpath,
             errno = 0;
             int retval = hdfsExists(fs, path);
             *parent_dir = old_value;
-            if (!retval) {
+            if (retval) {
                 retc = XrdHdfsSys::Emsg(epname, error, errno ? errno : ENOENT,
                                         "mkdir", path);
                 goto cleanup;
@@ -1003,11 +1010,23 @@ XrdHdfsSys::Mkdir(const char *req_path, mode_t mode, int mkpath,
         goto cleanup;
     }
 
-    errno = 0;
-    if (mode && (-1 == hdfsChmod(fs, path, mode))) {
-        retc = XrdHdfsSys::Emsg(epname, error, errno ? errno : EIO, "chmod",
-                                path);
-        goto cleanup;
+    if (MKDIR_PERFORM_CHMOD && mode) {
+        errno = 0;
+        hdfsFileInfo *fileInfo = hdfsGetPathInfo(fs, path);
+        if (NULL == fileInfo) {
+            retc = XrdHdfsSys::Emsg(epname, error, errno ? errno : ENOENT,
+                                        "stat", path);
+            goto cleanup;
+        }
+        mode_t curmode = fileInfo->mPermissions;
+        hdfsFreeFileInfo(fileInfo, 1);
+
+        errno = 0;
+        if ((curmode != mode) && (-1 == hdfsChmod(fs, path, mode))) {
+            retc = XrdHdfsSys::Emsg(epname, error, errno ? errno : EIO, "chmod",
+                                    path);
+            goto cleanup;
+        }
     }
 
 cleanup:
