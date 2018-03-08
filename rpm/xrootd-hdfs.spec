@@ -1,5 +1,5 @@
 Name: xrootd-hdfs
-Version: 2.0.0
+Version: 2.0.1
 Release: 1%{?dist}
 Summary: HDFS plugin for xrootd
 
@@ -65,6 +65,9 @@ rm $RPM_BUILD_ROOT%{_bindir}/xrootd_hdfs_envcheck
 %{_includedir}/XrdHdfs.hh
 
 %changelog
+* Thu Mar 08 2018 Brian Bockelman <bbockelm@cse.unl.edu> - 2.0.1-1
+- Fix directory creation logic.
+
 * Tue Mar 06 2018 Brian Bockelman <bbockelm@cse.unl.edu> - 2.0.0-1
 - Add full support for writing files into HDFS.
 
