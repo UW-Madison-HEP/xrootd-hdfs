@@ -1,6 +1,6 @@
 Name: xrootd-hdfs
 Version: 2.0.1
-Release: 1%{?dist}
+Release: 2%{?dist}
 Summary: HDFS plugin for xrootd
 
 Group: System Environment/Development
@@ -12,7 +12,7 @@ Source0: %{name}-%{version}.tar.gz
 BuildRequires: xrootd-devel >= 1:4.6
 BuildRequires: xrootd-server-devel >= 1:4.6
 BuildRequires: cmake
-BuildRequires: hadoop-libhdfs-devel >= 2.0.0+545-1.cdh4.1.1
+BuildRequires: /usr/include/hdfs.h
 BuildRequires: java-devel = 1:1.7.0
 BuildRequires: jpackage-utils
 Requires: hadoop-client >= 2.0.0+545-1.cdh4.1.1
@@ -65,6 +65,9 @@ rm $RPM_BUILD_ROOT%{_bindir}/xrootd_hdfs_envcheck
 %{_includedir}/XrdHdfs.hh
 
 %changelog
+* Tue Apr 03 2018 Edgar Fajardo <efajardo@physics.ucsd.edu> - 2.0.1-2
+- Change the build requires so it can be built for 3.3 (SOFTWARE-3179)
+
 * Thu Mar 08 2018 Brian Bockelman <bbockelm@cse.unl.edu> - 2.0.1-1
 - Fix directory creation logic.
 
