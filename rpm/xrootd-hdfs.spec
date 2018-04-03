@@ -66,7 +66,7 @@ rm $RPM_BUILD_ROOT%{_bindir}/xrootd_hdfs_envcheck
 
 %changelog
 * Tue Apr 03 2018 Edgar Fajardo <efajardo@physics.ucsd.edu> - 2.0.2-1
-- Change the build requires so it can be built for 3.3 (SOFTWARE-3179)
+- Change the build requires so it can be built for 3.3 (SOFTWARE-3165)
 
 * Thu Mar 08 2018 Brian Bockelman <bbockelm@cse.unl.edu> - 2.0.1-1
 - Fix directory creation logic.
