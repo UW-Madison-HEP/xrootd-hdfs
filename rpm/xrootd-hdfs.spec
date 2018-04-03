@@ -1,6 +1,6 @@
 Name: xrootd-hdfs
-Version: 2.0.1
-Release: 2%{?dist}
+Version: 2.0.2
+Release: 1%{?dist}
 Summary: HDFS plugin for xrootd
 
 Group: System Environment/Development
@@ -65,7 +65,7 @@ rm $RPM_BUILD_ROOT%{_bindir}/xrootd_hdfs_envcheck
 %{_includedir}/XrdHdfs.hh
 
 %changelog
-* Tue Apr 03 2018 Edgar Fajardo <efajardo@physics.ucsd.edu> - 2.0.1-2
+* Tue Apr 03 2018 Edgar Fajardo <efajardo@physics.ucsd.edu> - 2.0.2-1
 - Change the build requires so it can be built for 3.3 (SOFTWARE-3179)
 
 * Thu Mar 08 2018 Brian Bockelman <bbockelm@cse.unl.edu> - 2.0.1-1
