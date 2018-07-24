@@ -25,7 +25,7 @@ include_directories("${HDFS_INCLUDES}" "${JVM_INCLUDES}" "${JVM_MD_INCLUDES}")
 
 include_directories( "${PROJECT_SOURCE_DIR}" "${XROOTD_INCLUDES}" )
 
-add_library(XrdHdfs MODULE src/XrdHdfsBootstrap.cc)
+add_library(XrdHdfs MODULE src/XrdHdfsBootstrap.cc XrdHdfsChecksum.cc XrdHdfsChecksumCalc.cc)
 target_link_libraries(XrdHdfs ${XROOTD_UTILS} ${DL_LIB})
 
 add_library(XrdHdfsReal MODULE src/XrdHdfs.cc src/XrdHdfsConfig.cc src/XrdHdfs.hh)
