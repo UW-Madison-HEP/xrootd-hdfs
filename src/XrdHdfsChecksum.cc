@@ -1,7 +1,12 @@
+#include <sstream>
 
 #include "XrdVersion.hh"
 
 #include "XrdHdfsChecksum.hh"
+
+#include "XrdOss/XrdOss.hh"
+#include "XrdSfs/XrdSfsInterface.hh"
+#include "XrdSys/XrdSysError.hh"
 
 XrdVERSIONINFO(XrdCksInit, XrdHdfsChecksum)
 
@@ -27,17 +32,24 @@ XrdCks *XrdCksInit(XrdSysError *eDest,
 }
 
 
+ChecksumManager::ChecksumManager(XrdSysError& log)
+    : XrdCks(&log),
+      m_log(log)
+{
+}
+
+
 int
-ChecksumManager::GetFileContents(const char *pfn, std::string &result)
+ChecksumManager::GetFileContents(const char *pfn, std::string &result) const
 {
     if (!g_hdfs_oss) {return -ENOMEM;}
 
     std::string checksum_path = GetChecksumFilename(pfn);
 
-    XrdOssDF *checksum_file = g_hdfs_oss->newFile();
+    XrdOssDF *checksum_file = g_hdfs_oss->newFile("checksum_manager");
     if (!checksum_file) {return -ENOMEM;}
 
-    int rc = checksum_file->Open(checksum_path.c_str(), SFS_O_RDONLY, 0, XrdOucEnv &m_client);
+    int rc = checksum_file->Open(checksum_path.c_str(), SFS_O_RDONLY, 0, const_cast<XrdOucEnv &>(m_client));
     if (rc)
     {
         return rc;
@@ -55,7 +67,7 @@ ChecksumManager::GetFileContents(const char *pfn, std::string &result)
         do
         {
             errno = 0;  // Some versions of libhdfs forget to clear errno internally.
-            retval = g_hdfs_oss->Read(&read_buffer[0], offset, buffer_size-1);
+            retval = checksum_file->Read(&read_buffer[0], offset, buffer_size-1);
         }
         while ((retval < 0) && errno == EINTR);
 
@@ -74,43 +86,43 @@ ChecksumManager::GetFileContents(const char *pfn, std::string &result)
         return retval;
     }
 
-    contents = ss.str();
+    result = ss.str();
 
     return 0;
 }
 
 
 int
-ChecksumManager::Parse(const std::string &chksum_contents, ChecksumValues &result)
+ChecksumManager::Parse(const std::string &checksum_contents, ChecksumValues &result)
 {
-    const char *ptr = cksum_contents.c_str();
-    std::vector<char> cksum;
-    cksum.resize(cksum_contents.size()+1);
+    const char *ptr = checksum_contents.c_str();
+    std::vector<char> checksum_buffer;
+    checksum_buffer.resize(checksum_contents.size()+1);
     unsigned int length = 0;
     std::string cksum_value;
 
-    while (sscanf(ptr, "%s%n", &cksum[0], &length))
+    while (sscanf(ptr, "%s%n", &checksum_buffer[0], &length))
     {
-        if (strlen(cksm) < 2)
+        if (strlen(&checksum_buffer[0]) < 2)
         {
-            m_log.Error("Too-short entry for checksum");
+            m_log.Emsg("Parse", "Too-short entry for checksum");
             return -EIO;
         }
-        val = strchr(&cksum[0], ':');
+        char *val = strchr(&checksum_buffer[0], ':');
         if (val == NULL)
         {
-            m_log.Error("Invalid format of checksum entry.");
+            m_log.Emsg("Parse", "Invalid format of checksum entry.");
             return -EIO;
         }
         *val = '\0';
         val++;
         if (*val == '\0')
         {
-            m_log.Error("Checksum value not specified");
+            m_log.Emsg("Parse", "Checksum value not specified");
             return -EIO;
         }
         ChecksumValue digest_and_val;
-        digest_and_val.first = &cksum[0];
+        digest_and_val.first = &checksum_buffer[0];
         digest_and_val.second = val;
         result.push_back(digest_and_val);
 
@@ -121,35 +133,37 @@ ChecksumManager::Parse(const std::string &chksum_contents, ChecksumValues &resul
         }
         if (*ptr != '\n')
         {
-            // Error;
-            m_log.Error("Invalid format of checksum entry (Not a newline)");
+            m_log.Emsg("Parse", "Invalid format of checksum entry (Not a newline)");
             return -EIO;
         }
         ptr += 1;
         if (*ptr == '\0')
         {
-            m_log.Error("Requested checksum type", requested_cksm, " not found.");
-            return -EIO;
+            break;
         }
     }
     return 0;
 }
 
 
-ChecksumManager::Init(const char * /*config_fn*/, const char *default_checksum = NULL)
+int
+ChecksumManager::Init(const char * /*config_fn*/, const char *default_checksum)
 {
     if (default_checksum)
     {
-        m_default_digest = default_checksum'
+        m_default_digest = default_checksum;
     }
+    return 0;
 }
 
 std::string
-ChecksumManager::GetChecksumFilename(const char * pfn)
+ChecksumManager::GetChecksumFilename(const char * pfn) const
 {
     if (!pfn) {return "";}
 
-    return "/cksums/" + pfn;
+    std::string filename = "/cksums/";
+    filename += pfn;
+    return filename;
 }
 
 int
@@ -162,45 +176,46 @@ ChecksumManager::Get(const char *pfn, XrdCksData &cks)
         requested_checksum = "adler32";
     }
 
-    std::string cksum_contents;
-    int rc = GetFileContents(pfn, cksum_contents);
+    std::string checksum_contents;
+    int rc = GetFileContents(pfn, checksum_contents);
     if (rc)
     {
         return rc;
     }
     ChecksumValues values;
-    rc = Parse(cksum_contents, values);
+    rc = Parse(checksum_contents, values);
     if (rc)
     {
         return rc;
     }
 
+    std::string checksum_value;
     for (ChecksumValues::const_iterator iter = values.begin();
          iter != values.end();
          iter++)
     {
-        if (!strcasecmp(iter->first.c_str(), requested_checksum.c_str()))
+        if (!strcasecmp(iter->first.c_str(), requested_checksum))
         {
-            cksm_value = iter->second;
+            checksum_value = iter->second;
         }
     }
 
-    if (!cksm_value.size()) {
+    if (!checksum_value.size()) {
         Del(pfn, cks);
         return -ESRCH;
     }
 
     std::stringstream ss2;
-    ss2 << "Got checksum (" << requested_cksm << ":" << cksm_value << ") for " << pfn;
-    m_log.Error(ss2.str().c_str());
+    ss2 << "Got checksum (" << requested_checksum << ":" << checksum_value << ") for " << pfn;
+    m_log.Emsg("Get", ss2.str().c_str());
 
-    if (cksm_value.size() > cks.ValuSize)
+    if (checksum_value.size() > cks.ValuSize)
     {
-        m_log.Error("Recorded checksum is too long for file:", pfn);
+        m_log.Emsg("Get", "Recorded checksum is too long for file:", pfn);
         return -EDOM;
     }
-    memcpy(cks.Value, cksm_value.c_str(), cksm_value.size());
-    cks.Length = cksm_value.size();
+    memcpy(cks.Value, checksum_value.c_str(), checksum_value.size());
+    cks.Length = checksum_value.size();
 
     return 0;
 }
@@ -209,29 +224,29 @@ ChecksumManager::Get(const char *pfn, XrdCksData &cks)
 int
 ChecksumManager::Del(const char *pfn, XrdCksData &cks)
 {
-    return g_hdfs_oss->Unlink(checksum_path.c_str());
+    return g_hdfs_oss->Unlink(pfn);
 }
 
 
 int
 ChecksumManager::Config(const char *token, char *line)
 {
-    m_log.Error("Config variable passed", token, line);
+    m_log.Emsg("Config", "Config variable passed", token, line);
     return 1;
 }
 
 
 char *
-ChecksumManager::List(const char *pfn, char *buff, int blen, char seperator)
+ChecksumManager::List(const char *pfn, char *buff, int blen, char separator)
 {
-    std::string cksum_contents;
-    int rc = GetFileContents(pfn, cksum_contents);
+    std::string checksum_contents;
+    int rc = GetFileContents(pfn, checksum_contents);
     if (rc)
     {
         return NULL;
     }
     ChecksumValues values;
-    rc = Parse(cksum_contents, values);
+    rc = Parse(checksum_contents, values);
     if (rc)
     {
         return NULL;
@@ -251,10 +266,10 @@ ChecksumManager::List(const char *pfn, char *buff, int blen, char seperator)
         {
             ss << separator;
         }
-        ss << values.first;
+        ss << iter->first;
     }
     std::string result = ss.str();
-    size_t mem_to_copy = (blen < result.size()) ? blen : result.size();
+    size_t mem_to_copy = (static_cast<unsigned>(blen) < result.size()) ? blen : result.size();
     memcpy(buff, result.c_str(), mem_to_copy);
 
     return buff;
@@ -302,11 +317,12 @@ ChecksumManager::Size(const char *name)
     if (!strcasecmp(name, "md5")) {return 16;}
     else if (!strcasecmp(name, "adler32")) {return 5;}
     else if (!strcasecmp(name, "cksum")) {return 5;}
+    return -1;
 }
 
 
 int
 ChecksumManager::Set(const char *pfn, XrdCksData &cks, int mtime)
 {
-    
+    return 1;
 }

@@ -6,8 +6,11 @@
 #include "XrdCks/XrdCks.hh"
 #include "hdfs.h"
 
+#include <cstdio>
 #include <vector>
 #include <string>
+
+#include "XrdOuc/XrdOucEnv.hh"
 
 class XrdSysError;
 class XrdOucEnv;
@@ -35,13 +38,13 @@ public:
 
     virtual XrdCksCalc *Object(const char *name) override;
 
-    virtual int Size(const char *name=NULL) override;
+    virtual int Size(const char *name=NULL);
 
-    virtual int Set(const char *pfn, XrdCksData &cks, int mtime=0) override;
+    virtual int Set(const char *pfn, XrdCksData &cks, int mtime=0);
 
     virtual int Ver(const char *pfn, XrdCksData &cks);
 
-    virtual ~XrdCks() {}
+    virtual ~ChecksumManager() {}
 
     enum ChecksumTypes {
         MD5,
@@ -54,11 +57,11 @@ private:
     typedef std::vector<ChecksumValue> ChecksumValues;
 
     XrdSysError &m_log;
-    XrdOucEnv &m_client;
+    XrdOucEnv m_client;
 
-    std::string GetCksumFilename(const char *pfn) const;
+    std::string GetChecksumFilename(const char *pfn) const;
     int GetFileContents(const char * pfn, std::string &contents) const;
-    static int Parse(const std::string &chksum_contents, ChecksumValues &result);
+    int Parse(const std::string &chksum_contents, ChecksumValues &result);
 
     std::string m_default_digest;
 };

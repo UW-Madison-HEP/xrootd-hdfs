@@ -9,6 +9,17 @@ find_package( Hdfs REQUIRED )
 find_package( Jvm REQUIRED )
 find_package( Dl REQUIRED )
 
+macro(use_cxx11)
+  if (CMAKE_VERSION VERSION_LESS "3.1")
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+      set (CMAKE_CXX_FLAGS "-std=gnu++11 ${CMAKE_CXX_FLAGS}")
+    endif ()
+  else ()
+    set (CMAKE_CXX_STANDARD 11)
+  endif ()
+endmacro(use_cxx11)
+use_cxx11()
+
 if( CMAKE_COMPILER_IS_GNUCXX )
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror" )
 endif()
@@ -25,7 +36,7 @@ include_directories("${HDFS_INCLUDES}" "${JVM_INCLUDES}" "${JVM_MD_INCLUDES}")
 
 include_directories( "${PROJECT_SOURCE_DIR}" "${XROOTD_INCLUDES}" )
 
-add_library(XrdHdfs MODULE src/XrdHdfsBootstrap.cc XrdHdfsChecksum.cc XrdHdfsChecksumCalc.cc)
+add_library(XrdHdfs MODULE src/XrdHdfsBootstrap.cc src/XrdHdfsChecksum.cc src/XrdHdfsChecksumCalc.cc)
 target_link_libraries(XrdHdfs ${XROOTD_UTILS} ${DL_LIB})
 
 add_library(XrdHdfsReal MODULE src/XrdHdfs.cc src/XrdHdfsConfig.cc src/XrdHdfs.hh)
