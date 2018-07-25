@@ -5,6 +5,7 @@
 
 #include "XrdCks/XrdCks.hh"
 #include "hdfs.h"
+#include <openssl/evp.h>
 
 #include <cstdio>
 #include <vector>
@@ -16,6 +17,45 @@ class XrdSysError;
 class XrdOucEnv;
 
 namespace XrdHdfs {
+
+class ChecksumState
+{
+public:
+    ChecksumState(unsigned digests);
+
+    ~ChecksumState();
+
+    void Update(const unsigned char *buff, size_t blen);
+
+    void Finalize();
+
+    std::string Get(unsigned digest);
+
+private:
+    const unsigned m_digests;
+    uint32_t m_crc32;
+    uint32_t m_cksum;
+    uint32_t m_adler32;
+
+    size_t m_cur_chunk_bytes;
+    off_t m_offset;
+
+    EVP_MD_CTX *m_md5;
+    EVP_MD_CTX *m_file_sha1;
+    EVP_MD_CTX *m_chunk_sha1;
+
+    unsigned char m_md5_value[EVP_MAX_MD_SIZE];
+    std::string m_sha1_final; // Hex-encoded.
+    std::string m_graft;
+
+    struct CvmfsChunk
+    {
+        std::string m_sha1;
+        off_t m_offset;
+    };
+    std::vector<CvmfsChunk> m_chunks;
+
+};
 
 class ChecksumManager : public XrdCks
 {
@@ -47,9 +87,12 @@ public:
     virtual ~ChecksumManager() {}
 
     enum ChecksumTypes {
-        MD5,
-        CKSUM,
-        ADLER32
+        MD5     = 0x01,
+        CKSUM   = 0x02,
+        ADLER32 = 0x04,
+        CVMFS   = 0x08,
+        CRC32   = 0x10,
+        ALL     = 0xff
     };
 
 private:

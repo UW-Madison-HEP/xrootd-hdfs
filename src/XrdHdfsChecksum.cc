@@ -66,15 +66,15 @@ ChecksumManager::GetFileContents(const char *pfn, std::string &result) const
     {
         do
         {
-            errno = 0;  // Some versions of libhdfs forget to clear errno internally.
             retval = checksum_file->Read(&read_buffer[0], offset, buffer_size-1);
         }
-        while ((retval < 0) && errno == EINTR);
+        while (retval == -EINTR);
 
         if (retval > 0)
         {
             read_buffer[retval] = '\0';
             ss << &read_buffer[0];
+            offset += retval;
         }
     }
     while (retval > 0);

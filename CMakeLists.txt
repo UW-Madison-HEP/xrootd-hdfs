@@ -9,6 +9,10 @@ find_package( Hdfs REQUIRED )
 find_package( Jvm REQUIRED )
 find_package( Dl REQUIRED )
 
+include (FindPkgConfig)
+pkg_check_modules(LIBCRYPTO REQUIRED libcrypto)
+pkg_check_modules(ZLIB REQUIRED zlib)
+
 macro(use_cxx11)
   if (CMAKE_VERSION VERSION_LESS "3.1")
     if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -32,12 +36,12 @@ SET( CMAKE_SHARED_LINKER_FLAGS "-Wl,--no-undefined")
 SET( CMAKE_MODULE_LINKER_FLAGS "-Wl,--no-undefined")
 SET( CMAKE_EXE_LINKER_FLAGS "-Wl,--no-undefined")
 
-include_directories("${HDFS_INCLUDES}" "${JVM_INCLUDES}" "${JVM_MD_INCLUDES}")
+include_directories(${HDFS_INCLUDES} ${JVM_INCLUDES} ${JVM_MD_INCLUDES} ${LIBCRYPTO_INCLUDE_DIRS} ${ZLIB_INCLUDE_DIRS})
 
 include_directories( "${PROJECT_SOURCE_DIR}" "${XROOTD_INCLUDES}" )
 
 add_library(XrdHdfs MODULE src/XrdHdfsBootstrap.cc src/XrdHdfsChecksum.cc src/XrdHdfsChecksumCalc.cc)
-target_link_libraries(XrdHdfs ${XROOTD_UTILS} ${DL_LIB})
+target_link_libraries(XrdHdfs ${XROOTD_UTILS} ${DL_LIB} ${LIBCRYPTO_LIBRARIES} ${ZLIB_LIBRARIES})
 
 add_library(XrdHdfsReal MODULE src/XrdHdfs.cc src/XrdHdfsConfig.cc src/XrdHdfs.hh)
 target_link_libraries(XrdHdfsReal ${HDFS_LIB} ${XROOTD_UTILS})
