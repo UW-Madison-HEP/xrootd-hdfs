@@ -29,7 +29,7 @@ public:
 
     void Finalize();
 
-    std::string Get(unsigned digest);
+    std::string Get(unsigned digest) const;
 
 private:
     ChecksumState(ChecksumState const &);
@@ -85,6 +85,8 @@ public:
     virtual int Size(const char *name=NULL);
 
     virtual int Set(const char *pfn, XrdCksData &cks, int mtime=0);
+
+    int Set(const char *pfn, const ChecksumState &state) const;
 
     virtual int Ver(const char *pfn, XrdCksData &cks);
 

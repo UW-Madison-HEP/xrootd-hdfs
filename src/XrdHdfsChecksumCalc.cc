@@ -75,7 +75,7 @@ static uint32_t const g_crctab[256] =
 
 
 static std::string
-human_readable_evp(unsigned char *evp, size_t length)
+human_readable_evp(const unsigned char *evp, size_t length)
 {
     unsigned int idx;
     std::string result; result.reserve(length*2);
@@ -133,7 +133,7 @@ ChecksumState::~ChecksumState()
 
 
 std::string
-ChecksumState::Get(unsigned digest)
+ChecksumState::Get(unsigned digest) const
 {
     if ((digest & ChecksumManager::CKSUM) && (m_digests & ChecksumManager::CKSUM))
     {
@@ -294,6 +294,36 @@ ChecksumManager::Object(const char * /*name*/)
     return NULL;
 }
 
+
+int
+ChecksumManager::Set(const char *pfn, const ChecksumState &state) const
+{
+    ChecksumValues values;
+    ChecksumValue value;
+    value.first = "CKSUM";
+    value.second = state.Get(ChecksumManager::CKSUM);
+    if (value.second.size()) {values.push_back(value);}
+
+    value.first = "ADLER32";
+    value.second = state.Get(ChecksumManager::ADLER32);
+    if (value.second.size()) {values.push_back(value);}
+
+    value.first = "CRC32";
+    value.second = state.Get(ChecksumManager::CRC32);
+    if (value.second.size()) {values.push_back(value);}
+
+    value.first = "MD5";
+    value.second = state.Get(ChecksumManager::MD5);
+    if (value.second.size()) {values.push_back(value);}
+
+    value.first = "CVMFS";
+    value.second = state.Get(ChecksumManager::CVMFS);
+    if (value.second.size()) {values.push_back(value);}
+
+    return SetMultiple(pfn, values); // Ignore return value - this is simply advisory.
+}
+
+
 int
 ChecksumManager::Calc(const char *pfn, XrdCksData &cks, int do_set)
 {
@@ -368,63 +398,32 @@ ChecksumManager::Calc(const char *pfn, XrdCksData &cks, int do_set)
 
     state.Finalize();
 
-    ChecksumValues values;
-    if (digests & ChecksumManager::CKSUM)
+    Set(pfn, state);
+
+    ChecksumValue value;
+    switch (return_digest)
     {
-        ChecksumValue value;
+    case ChecksumManager::CKSUM:
         value.first = "CKSUM";
         value.second = state.Get(ChecksumManager::CKSUM);
-        if (value.second.size()) {values.push_back(value);}
-        if (return_digest == ChecksumManager::CKSUM)
-        {
-            if (!value.second.size()) return -EIO;
-            cks.Set(value.second.c_str(), value.second.size());
-        }
-    }
-    if (digests & ChecksumManager::ADLER32)
-    {
-        ChecksumValue value;
+        break;
+    case ChecksumManager::ADLER32:
         value.first = "ADLER32";
         value.second = state.Get(ChecksumManager::ADLER32);
-        if (value.second.size()) {values.push_back(value);}
-        if (return_digest == ChecksumManager::ADLER32)
-        {
-            if (!value.second.size()) return -EIO;
-            cks.Set(value.second.c_str(), value.second.size());
-        }
-    }
-    if (digests & ChecksumManager::CRC32)
-    {
-        ChecksumValue value;
+        break;
+    case ChecksumManager::CRC32:
         value.first = "CRC32";
         value.second = state.Get(ChecksumManager::CRC32);
-        if (value.second.size()) {values.push_back(value);}
-        if (return_digest == ChecksumManager::CRC32)
-        {
-            if (!value.second.size()) return -EIO;
-            cks.Set(value.second.c_str(), value.second.size());
-        }
-    }
-    if (digests & ChecksumManager::MD5)
-    {
-        ChecksumValue value;
+        break;
+    case ChecksumManager::MD5:
         value.first = "MD5";
         value.second = state.Get(ChecksumManager::MD5);
-        if (value.second.size()) {values.push_back(value);}
-        if (return_digest == ChecksumManager::MD5)
-        {
-            if (!value.second.size()) return -EIO;
-            cks.Set(value.second.c_str(), value.second.size());
-        }
-    }
-    if (digests & ChecksumManager::CVMFS)
-    {
-        ChecksumValue value;
-        value.first = "CVMFS";
-        value.second = state.Get(ChecksumManager::CVMFS);
-        if (value.second.size()) {values.push_back(value);}
-    }
+        break;
+    default:
+        return -ENOTSUP;
+    };
+    if (!value.second.size()) return -EIO;
+    cks.Set(value.second.c_str(), value.second.size());
 
-    SetMultiple(pfn, values); // Ignore return value - this is simply advisory.
     return 0;
 }
