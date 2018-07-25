@@ -31,7 +31,9 @@
 #include "XrdSys/XrdSysPlugin.hh"
 #include "XrdSys/XrdSysPthread.hh"
 #include "XrdSec/XrdSecInterface.hh"
+
 #include "XrdHdfs.hh"
+#include "XrdHdfsChecksum.hh"
 
 #define REUSE_CONNECTION 1
 
@@ -132,12 +134,15 @@ using namespace XrdHdfs;
 /******************************************************************************/
 extern "C"
 {
+XrdOss *g_hdfs_oss = NULL;
+
 XrdOss *XrdOssGetStorageSystem(XrdOss       *native_oss,
                                XrdSysLogger *Logger,
                          const char         *config_fn,
                          const char         *parms)
 {
-   return (XrdHdfsSS.Init(Logger, config_fn) ? 0 : (XrdOss *)&XrdHdfsSS);
+   g_hdfs_oss = (XrdHdfsSS.Init(Logger, config_fn) ? 0 : (XrdOss *)&XrdHdfsSS);
+   return g_hdfs_oss;
 }
 }
 
@@ -349,7 +354,8 @@ XrdHdfsDirectory::~XrdHdfsDirectory()
 XrdHdfsFile::XrdHdfsFile(const char *user) : XrdOssDF(), m_fs(NULL), fh(NULL), fname(NULL), m_nextoff(0),
     readbuf(NULL), readbuf_size(0), readbuf_offset(0), readbuf_len(0),
     readbuf_bypassed(0), readbuf_misses(0), readbuf_hits(0), readbuf_partial_hits(0),
-    readbuf_bytes_used(0), readbuf_bytes_loaded(0)
+    readbuf_bytes_used(0), readbuf_bytes_loaded(0),
+    m_state(NULL)
 {
 }
 
@@ -486,6 +492,11 @@ int XrdHdfsFile::Open(const char               *path,      // In
    if (err_code != 0)
        return (err_code > 0) ? -err_code : err_code;
 
+   if ((open_flag & O_WRONLY) && (strncmp("/cksums", fname, 7)))
+   {
+       m_state = new ChecksumState(ChecksumManager::ALL);
+   }
+
    return XrdOssOK;
 }
 
@@ -534,10 +545,20 @@ int XrdHdfsFile::Close(long long int *)
    }
    readbuf_lock.UnLock();
 
+   if (m_state)
+   {
+       m_state->Finalize();
+       XrdHdfs::ChecksumManager manager(HdfsEroute);
+       manager.Set(fname, *m_state);
+       delete m_state;
+       m_state = NULL;
+   }
+
    if (fname) {
       free(fname);
       fname = 0;
    }
+
    return ret;
 }
 
@@ -547,6 +568,7 @@ XrdHdfsFile::~XrdHdfsFile()
    if (m_fs) {hadoop_disconnect(m_fs);}
    if (fname) {free(fname);}
    if (readbuf) {free(readbuf);}
+   if (m_state) {delete m_state;}
 }
   
 /******************************************************************************/
@@ -571,7 +593,7 @@ ssize_t XrdHdfsFile::Read(void   *buff,      // Out
 #ifndef NODEBUG
    static const char *epname = "Read";
 #endif
-   size_t nbytes;
+   ssize_t nbytes;
 
    XrdSysMutexHelper readbuf_lock(readbuf_mutex);
    // There are multiple exit points from this function,
@@ -581,7 +603,12 @@ ssize_t XrdHdfsFile::Read(void   *buff,      // Out
    if( blen > readbuf_size ) {
        // request is larger than readbuf, so bypass readbuf and read
        // directly into caller's buffer
+      errno = 0;
       nbytes = hdfsPread(m_fs, fh, (off_t)offset, (void *)buff, (size_t)blen);
+      if ((nbytes == 0) && errno)
+      {
+          nbytes = -1;
+      }
 
       readbuf_bypassed++;
    }
@@ -619,11 +646,12 @@ ssize_t XrdHdfsFile::Read(void   *buff,      // Out
        readbuf_len = 0;
        // loop in case of short reads
        while( readbuf_len < readbuf_size ) {
+           errno = 0;
            int n = hdfsPread(m_fs, fh, offset + readbuf_len, (void *)(readbuf + readbuf_len), readbuf_size - readbuf_len);
            if( n < 0 && errno == EINTR ) {
                continue;
            }
-           else if( n < 0 ) {
+           else if (( n < 0 ) || (errno && (n == 0))){
                return XrdHdfsSys::Emsg(epname, error, errno, "read", fname);
            }
            else if( n == 0 ) {
@@ -701,6 +729,11 @@ ssize_t XrdHdfsFile::Write(const void *buff,    // In
 
     ssize_t result = hdfsWrite(m_fs, fh, buff, blen);
     if (result >= 0) {m_nextoff += result;}
+
+    if (m_state)
+    {
+        m_state->Update(static_cast<const unsigned char*>(buff), blen);
+    }
 
    return result;
 }

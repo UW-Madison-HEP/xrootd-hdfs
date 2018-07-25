@@ -24,6 +24,8 @@ class XrdSysLogger;
 static XrdOss *Bootstrap(XrdOss*, XrdSysLogger *, const char *, const char *);
 static int DetermineEnvironment();
 
+XrdOss *g_hdfs_oss = NULL;
+
 extern "C"
 {
 
@@ -32,7 +34,11 @@ XrdOss *XrdOssGetStorageSystem(XrdOss       *native_oss,
                          const char         *config_fn,
                          const char         *parms)
 {
-   return Bootstrap(native_oss, Logger, config_fn, parms);
+   if (g_hdfs_oss) {return g_hdfs_oss;}
+
+   XrdOss *result = Bootstrap(native_oss, Logger, config_fn, parms);
+   if (result) {g_hdfs_oss = result;}
+   return result;
 }
 
 }

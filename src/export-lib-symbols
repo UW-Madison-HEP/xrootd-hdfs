@@ -1,0 +1,8 @@
+{
+global:
+  XrdOssGetStorageSystem*;
+  XrdCksInit*;
+
+local:
+  *;
+};
