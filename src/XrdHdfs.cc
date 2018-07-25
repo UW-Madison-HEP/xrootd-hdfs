@@ -571,7 +571,7 @@ ssize_t XrdHdfsFile::Read(void   *buff,      // Out
 #ifndef NODEBUG
    static const char *epname = "Read";
 #endif
-   size_t nbytes;
+   ssize_t nbytes;
 
    XrdSysMutexHelper readbuf_lock(readbuf_mutex);
    // There are multiple exit points from this function,
@@ -581,7 +581,12 @@ ssize_t XrdHdfsFile::Read(void   *buff,      // Out
    if( blen > readbuf_size ) {
        // request is larger than readbuf, so bypass readbuf and read
        // directly into caller's buffer
+      errno = 0;
       nbytes = hdfsPread(m_fs, fh, (off_t)offset, (void *)buff, (size_t)blen);
+      if ((nbytes == 0) && errno)
+      {
+          nbytes = -1;
+      }
 
       readbuf_bypassed++;
    }
@@ -619,11 +624,12 @@ ssize_t XrdHdfsFile::Read(void   *buff,      // Out
        readbuf_len = 0;
        // loop in case of short reads
        while( readbuf_len < readbuf_size ) {
+           errno = 0;
            int n = hdfsPread(m_fs, fh, offset + readbuf_len, (void *)(readbuf + readbuf_len), readbuf_size - readbuf_len);
            if( n < 0 && errno == EINTR ) {
                continue;
            }
-           else if( n < 0 ) {
+           else if (( n < 0 ) || (errno && (n == 0))){
                return XrdHdfsSys::Emsg(epname, error, errno, "read", fname);
            }
            else if( n == 0 ) {
