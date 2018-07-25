@@ -1,4 +1,5 @@
 #include <sstream>
+#include <algorithm>
 
 #include "XrdVersion.hh"
 
@@ -324,5 +325,105 @@ ChecksumManager::Size(const char *name)
 int
 ChecksumManager::Set(const char *pfn, XrdCksData &cks, int mtime)
 {
-    return 1;
+    std::string checksum_contents;
+    int rc = GetFileContents(pfn, checksum_contents);
+    if (rc)
+    {
+        return rc;
+    }
+    ChecksumValues values;
+    rc = Parse(checksum_contents, values);
+    if (rc)
+    {
+        return rc;
+    }
+
+    std::string checksum_name(cks.Name);
+    std::transform(checksum_name.begin(), checksum_name.end(), checksum_name.begin(), ::toupper);
+    std::vector<char> checksum_value; checksum_value.resize(cks.Length*2 + 1);
+    cks.Get(&checksum_value[0], cks.Length*2 + 1);
+    bool overwrote_value = false;
+    bool changed_value = true;
+
+    for (ChecksumValues::iterator iter = values.begin();
+         iter != values.end();
+         iter++)
+    {
+        std::string cur_checksum_name = iter->first;
+        std::transform(cur_checksum_name.begin(), cur_checksum_name.end(),
+                       cur_checksum_name.begin(), ::toupper);
+        if (cur_checksum_name == checksum_name)
+        {
+            if (!strcmp(iter->second.c_str(), &checksum_value[0]))
+            {
+                changed_value = false;
+            }
+            else
+            {
+                iter->second = &checksum_value[0];
+            }
+            overwrote_value = true;
+        }
+    }
+    if (!overwrote_value)
+    {
+        ChecksumValue value;
+        value.first = checksum_name;
+        value.second = &checksum_value[0];
+        values.push_back(value);
+    }
+    if (!changed_value)
+    {
+        // Nothing was changed - skip overwrite of HDFS file.
+        return 0;
+    }
+
+    return SetMultiple(pfn, values);
+}
+
+
+int
+ChecksumManager::SetMultiple(const char *pfn, const ChecksumValues &values) const
+{
+    std::stringstream ss;
+    for (ChecksumValues::const_iterator iter = values.begin();
+         iter != values.end();
+         iter++)
+    {
+        std::string cur_checksum_name = iter->first;
+        std::transform(cur_checksum_name.begin(), cur_checksum_name.end(),
+                       cur_checksum_name.begin(), ::toupper);
+
+        ss << cur_checksum_name << ":" << iter->second << std::endl;
+    }
+    std::string result = ss.str();
+
+    XrdOssDF *fh = g_hdfs_oss->newFile("checksum_set");
+    if (!fh) {return -ENOMEM;}
+    int rc = fh->Open(pfn, SFS_O_WRONLY, 0, const_cast<XrdOucEnv &>(m_client));
+    if (rc)
+    {
+        return rc;
+    }
+
+    int retval = 0;
+    off_t offset = 0;
+    do
+    {
+        do
+        {
+            retval = fh->Write(result.c_str() + offset, offset, result.size() - offset);
+        }
+        while (retval == -EINTR);
+
+        if (retval > 0)
+        {
+            offset += retval;
+        }
+    }
+    while ((retval > 0) && (offset < static_cast<off_t>(result.size())));
+    fh->Close();
+    delete fh;
+
+    return (retval < 0) ? retval : 0;
 }

@@ -37,6 +37,7 @@ private:
     uint32_t m_cksum;
     uint32_t m_adler32;
 
+    unsigned m_md5_length;
     size_t m_cur_chunk_bytes;
     off_t m_offset;
 
@@ -103,8 +104,9 @@ private:
     XrdOucEnv m_client;
 
     std::string GetChecksumFilename(const char *pfn) const;
-    int GetFileContents(const char * pfn, std::string &contents) const;
+    int GetFileContents(const char *pfn, std::string &contents) const;
     int Parse(const std::string &chksum_contents, ChecksumValues &result);
+    int SetMultiple(const char *pfn, const ChecksumValues &values) const;
 
     std::string m_default_digest;
 };

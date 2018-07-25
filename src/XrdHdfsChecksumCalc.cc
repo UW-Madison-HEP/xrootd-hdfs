@@ -2,6 +2,7 @@
 
 #include <sstream>
 
+#include <arpa/inet.h>
 #include <zlib.h>
 #include <openssl/evp.h>
 
@@ -92,6 +93,7 @@ ChecksumState::ChecksumState(unsigned digests)
     : m_digests(digests),
       m_cksum(0),
       m_adler32(adler32(0, NULL, 0)),
+      m_md5_length(0),
       m_cur_chunk_bytes(0),
       m_offset(0),
       m_md5(NULL),
@@ -129,6 +131,31 @@ ChecksumState::~ChecksumState()
     }
 }
 
+
+std::string
+ChecksumState::Get(unsigned digest)
+{
+    if ((digest & ChecksumManager::CKSUM) && (m_digests & ChecksumManager::CKSUM))
+    {
+        uint32_t cksum_no = htonl(m_cksum);
+        return human_readable_evp(reinterpret_cast<unsigned char *>(&cksum_no), sizeof(cksum_no));
+    }
+    if ((digest & ChecksumManager::ADLER32) && (m_digests & ChecksumManager::ADLER32))
+    {
+        uint32_t adler32_no = htonl(m_adler32);
+        return human_readable_evp(reinterpret_cast<unsigned char *>(&adler32_no), sizeof(adler32_no));
+    }
+    if ((digest & ChecksumManager::MD5) && (m_digests & ChecksumManager::MD5))
+    {
+        return human_readable_evp(m_md5_value, m_md5_length);
+    }
+    if ((digest & ChecksumManager::CVMFS) && (m_digests & ChecksumManager::CVMFS))
+    {
+        return m_graft;
+    }
+
+    return "";
+}
 
 void
 ChecksumState::Update(const unsigned char *buffer, size_t bsize)
@@ -191,7 +218,7 @@ ChecksumState::Finalize()
 {
     if (m_digests & ChecksumManager::MD5)
     {
-        EVP_DigestFinal_ex(m_md5, m_md5_value, NULL);
+        EVP_DigestFinal_ex(m_md5, m_md5_value, &m_md5_length);
         EVP_MD_CTX_destroy(m_md5);
     }
     if (m_digests & ChecksumManager::CVMFS)
@@ -313,6 +340,35 @@ ChecksumManager::Calc(const char *pfn, XrdCksData &cks, int do_set)
 
     state.Finalize();
 
-    // TODO: actually fill in the requested checksum.
-    return -ENOTSUP;
+    ChecksumValues values;
+    if (digests & ChecksumManager::CKSUM)
+    {
+        ChecksumValue value;
+        value.first = "CKSUM";
+        value.second = state.Get(ChecksumManager::CKSUM);
+        if (value.second.size()) {values.push_back(value);}
+    }
+    if (digests & ChecksumManager::ADLER32)
+    {
+        ChecksumValue value;
+        value.first = "ADLER32";
+        value.second = state.Get(ChecksumManager::ADLER32);
+        if (value.second.size()) {values.push_back(value);}
+    }
+    if (digests & ChecksumManager::MD5)
+    {
+        ChecksumValue value;
+        value.first = "MD5";
+        value.second = state.Get(ChecksumManager::MD5);
+        if (value.second.size()) {values.push_back(value);}
+    }
+    if (digests & ChecksumManager::CVMFS)
+    {
+        ChecksumValue value;
+        value.first = "CVMFS";
+        value.second = state.Get(ChecksumManager::CVMFS);
+        if (value.second.size()) {values.push_back(value);}
+    }
+
+    return SetMultiple(pfn, values);
 }
