@@ -29,7 +29,7 @@ if( CMAKE_COMPILER_IS_GNUCXX )
 endif()
 
 if( CMAKE_COMPILER_IS_GNUCC )
-  set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror" )
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror" )
 endif()
 
 SET( CMAKE_SHARED_LINKER_FLAGS "-Wl,--no-undefined")

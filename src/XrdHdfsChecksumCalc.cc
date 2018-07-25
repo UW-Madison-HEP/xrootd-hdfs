@@ -137,8 +137,14 @@ ChecksumState::Get(unsigned digest)
 {
     if ((digest & ChecksumManager::CKSUM) && (m_digests & ChecksumManager::CKSUM))
     {
-        uint32_t cksum_no = htonl(m_cksum);
-        return human_readable_evp(reinterpret_cast<unsigned char *>(&cksum_no), sizeof(cksum_no));
+        std::stringstream ss;
+        ss << m_cksum;
+        return ss.str();
+    }
+    if ((digest & ChecksumManager::CRC32) && (m_digests & ChecksumManager::CRC32))
+    {
+        uint32_t crc32_no = htonl(m_crc32);
+        return human_readable_evp(reinterpret_cast<unsigned char *>(&crc32_no), sizeof(crc32_no));
     }
     if ((digest & ChecksumManager::ADLER32) && (m_digests & ChecksumManager::ADLER32))
     {
@@ -221,6 +227,18 @@ ChecksumState::Finalize()
         EVP_DigestFinal_ex(m_md5, m_md5_value, &m_md5_length);
         EVP_MD_CTX_destroy(m_md5);
         m_md5 = NULL;
+    }
+    if (m_digests & ChecksumManager::CKSUM)
+    {
+        unsigned char c;
+        size_t n = m_offset;
+        uint32_t crc = m_cksum;
+        while (n != 0) {
+            c = n & 0377;
+            n >>= 8;
+            crc = (crc << 8) ^ g_crctab[(crc >> 24) ^ c];
+        }
+        m_cksum = ~crc;
     }
     if (m_digests & ChecksumManager::CVMFS)
     {
@@ -370,6 +388,18 @@ ChecksumManager::Calc(const char *pfn, XrdCksData &cks, int do_set)
         value.second = state.Get(ChecksumManager::ADLER32);
         if (value.second.size()) {values.push_back(value);}
         if (return_digest == ChecksumManager::ADLER32)
+        {
+            if (!value.second.size()) return -EIO;
+            cks.Set(value.second.c_str(), value.second.size());
+        }
+    }
+    if (digests & ChecksumManager::CRC32)
+    {
+        ChecksumValue value;
+        value.first = "CRC32";
+        value.second = state.Get(ChecksumManager::CRC32);
+        if (value.second.size()) {values.push_back(value);}
+        if (return_digest == ChecksumManager::CRC32)
         {
             if (!value.second.size()) return -EIO;
             cks.Set(value.second.c_str(), value.second.size());
