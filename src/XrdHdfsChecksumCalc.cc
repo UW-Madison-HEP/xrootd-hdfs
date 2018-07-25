@@ -78,7 +78,7 @@ static std::string
 human_readable_evp(unsigned char *evp, size_t length)
 {
     unsigned int idx;
-    std::string result; result.resize(length*2);
+    std::string result; result.reserve(length*2);
     for (idx = 0; idx < length; idx++)
     {
         char encoded[2];
@@ -220,6 +220,7 @@ ChecksumState::Finalize()
     {
         EVP_DigestFinal_ex(m_md5, m_md5_value, &m_md5_length);
         EVP_MD_CTX_destroy(m_md5);
+        m_md5 = NULL;
     }
     if (m_digests & ChecksumManager::CVMFS)
     {
@@ -227,6 +228,7 @@ ChecksumState::Finalize()
         unsigned int sha1_len;
         EVP_DigestFinal_ex(m_file_sha1, sha1_value, &sha1_len);
         EVP_MD_CTX_destroy(m_file_sha1);
+        m_file_sha1 = NULL;
         m_sha1_final = human_readable_evp(sha1_value, sha1_len);
 
         off_t chunk_offset = m_offset - m_cur_chunk_bytes;
@@ -238,6 +240,7 @@ ChecksumState::Finalize()
             new_chunk.m_sha1 = human_readable_evp(sha1_value, sha1_len);
         }
         EVP_MD_CTX_destroy(m_chunk_sha1);
+        m_chunk_sha1 = NULL;
 
         std::stringstream ss;
         ss << "size=" << m_offset << ";checksum=" << m_sha1_final;
@@ -277,30 +280,32 @@ int
 ChecksumManager::Calc(const char *pfn, XrdCksData &cks, int do_set)
 {
     int digests = 0;
+    int return_digest = 0;
     if (do_set)
     {
         digests = ChecksumManager::ALL;
     }
-    else if (!strncasecmp(cks.Name, "md5", cks.NameSize))
+    if (!strncasecmp(cks.Name, "md5", cks.NameSize))
     {
-        digests = ChecksumManager::MD5;
+        return_digest = ChecksumManager::MD5;
     }
     else if (!strncasecmp(cks.Name, "cksum", cks.NameSize))
     {
-        digests = ChecksumManager::CKSUM;
+        return_digest = ChecksumManager::CKSUM;
     }
     else if (!strncasecmp(cks.Name, "crc32", cks.NameSize))
     {
-        digests = ChecksumManager::CRC32;
+        return_digest = ChecksumManager::CRC32;
     }
     else if (!strncasecmp(cks.Name, "adler32", cks.NameSize))
     {
-        digests = ChecksumManager::ADLER32;
+        return_digest = ChecksumManager::ADLER32;
     }
     else
     {
         return -ENOTSUP;
     }
+    digests |= return_digest;
 
     if (!g_hdfs_oss) {return -ENOMEM;}
 
@@ -316,7 +321,7 @@ ChecksumManager::Calc(const char *pfn, XrdCksData &cks, int do_set)
 
     const static int buffer_size = 256*1024;
     std::vector<unsigned char> read_buffer;
-    read_buffer.resize(buffer_size);
+    read_buffer.reserve(buffer_size);
 
     int retval = 0;
     off_t offset = 0;
@@ -338,6 +343,11 @@ ChecksumManager::Calc(const char *pfn, XrdCksData &cks, int do_set)
     fh->Close();
     delete fh;
 
+    if (retval < 0)
+    {
+        return -EIO;
+    }
+
     state.Finalize();
 
     ChecksumValues values;
@@ -347,6 +357,11 @@ ChecksumManager::Calc(const char *pfn, XrdCksData &cks, int do_set)
         value.first = "CKSUM";
         value.second = state.Get(ChecksumManager::CKSUM);
         if (value.second.size()) {values.push_back(value);}
+        if (return_digest == ChecksumManager::CKSUM)
+        {
+            if (!value.second.size()) return -EIO;
+            cks.Set(value.second.c_str(), value.second.size());
+        }
     }
     if (digests & ChecksumManager::ADLER32)
     {
@@ -354,6 +369,11 @@ ChecksumManager::Calc(const char *pfn, XrdCksData &cks, int do_set)
         value.first = "ADLER32";
         value.second = state.Get(ChecksumManager::ADLER32);
         if (value.second.size()) {values.push_back(value);}
+        if (return_digest == ChecksumManager::ADLER32)
+        {
+            if (!value.second.size()) return -EIO;
+            cks.Set(value.second.c_str(), value.second.size());
+        }
     }
     if (digests & ChecksumManager::MD5)
     {
@@ -361,6 +381,11 @@ ChecksumManager::Calc(const char *pfn, XrdCksData &cks, int do_set)
         value.first = "MD5";
         value.second = state.Get(ChecksumManager::MD5);
         if (value.second.size()) {values.push_back(value);}
+        if (return_digest == ChecksumManager::MD5)
+        {
+            if (!value.second.size()) return -EIO;
+            cks.Set(value.second.c_str(), value.second.size());
+        }
     }
     if (digests & ChecksumManager::CVMFS)
     {
@@ -370,5 +395,6 @@ ChecksumManager::Calc(const char *pfn, XrdCksData &cks, int do_set)
         if (value.second.size()) {values.push_back(value);}
     }
 
-    return SetMultiple(pfn, values);
+    SetMultiple(pfn, values); // Ignore return value - this is simply advisory.
+    return 0;
 }

@@ -26,6 +26,7 @@ XrdCks *XrdCksInit(XrdSysError *eDest,
                    const char *params)
 {
     XrdCks *cks = new ChecksumManager(*eDest);
+    eDest->Emsg("ChecksumManager", "Initializing checksum manager with config file", config_fn);
     cks->Init(config_fn);
     return cks;
 }
@@ -59,7 +60,7 @@ ChecksumManager::GetFileContents(const char *pfn, std::string &result) const
     std::vector<char> read_buffer;
     std::stringstream ss;
     const int buffer_size = 4096;
-    read_buffer.resize(buffer_size);
+    read_buffer.reserve(buffer_size);
 
     int retval = 0;
     off_t offset = 0;
@@ -98,7 +99,7 @@ ChecksumManager::Parse(const std::string &checksum_contents, ChecksumValues &res
 {
     const char *ptr = checksum_contents.c_str();
     std::vector<char> checksum_buffer;
-    checksum_buffer.resize(checksum_contents.size()+1);
+    checksum_buffer.reserve(checksum_contents.size()+1);
     unsigned int length = 0;
     std::string cksum_value;
 
@@ -154,7 +155,7 @@ ChecksumManager::Init(const char * /*config_fn*/, const char *default_checksum)
     {
         m_default_digest = default_checksum;
     }
-    return 0;
+    return 1;
 }
 
 std::string
@@ -181,7 +182,7 @@ ChecksumManager::Get(const char *pfn, XrdCksData &cks)
     int rc = GetFileContents(pfn, checksum_contents);
     if (rc)
     {
-        return rc;
+        return (rc == -ENOENT) ? -ESRCH : rc;
     }
     ChecksumValues values;
     rc = Parse(checksum_contents, values);
@@ -215,8 +216,7 @@ ChecksumManager::Get(const char *pfn, XrdCksData &cks)
         m_log.Emsg("Get", "Recorded checksum is too long for file:", pfn);
         return -EDOM;
     }
-    memcpy(cks.Value, checksum_value.c_str(), checksum_value.size());
-    cks.Length = checksum_value.size();
+    cks.Set(checksum_value.c_str(), checksum_value.size());
 
     return 0;
 }
@@ -232,7 +232,7 @@ ChecksumManager::Del(const char *pfn, XrdCksData &cks)
 int
 ChecksumManager::Config(const char *token, char *line)
 {
-    m_log.Emsg("Config", "Config variable passed", token, line);
+    m_log.Emsg("Config", "ChecksumManager config variable passed", token, line);
     return 1;
 }
 
@@ -340,7 +340,7 @@ ChecksumManager::Set(const char *pfn, XrdCksData &cks, int mtime)
 
     std::string checksum_name(cks.Name);
     std::transform(checksum_name.begin(), checksum_name.end(), checksum_name.begin(), ::toupper);
-    std::vector<char> checksum_value; checksum_value.resize(cks.Length*2 + 1);
+    std::vector<char> checksum_value; checksum_value.reserve(cks.Length*2 + 1);
     cks.Get(&checksum_value[0], cks.Length*2 + 1);
     bool overwrote_value = false;
     bool changed_value = true;
@@ -400,7 +400,9 @@ ChecksumManager::SetMultiple(const char *pfn, const ChecksumValues &values) cons
 
     XrdOssDF *fh = g_hdfs_oss->newFile("checksum_set");
     if (!fh) {return -ENOMEM;}
-    int rc = fh->Open(pfn, SFS_O_WRONLY, 0, const_cast<XrdOucEnv &>(m_client));
+
+    std::string checksum_pfn = GetChecksumFilename(pfn);
+    int rc = fh->Open(checksum_pfn.c_str(), SFS_O_WRONLY, 0, const_cast<XrdOucEnv &>(m_client));
     if (rc)
     {
         return rc;

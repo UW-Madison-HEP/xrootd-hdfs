@@ -21,7 +21,7 @@ namespace XrdHdfs {
 class ChecksumState
 {
 public:
-    ChecksumState(unsigned digests);
+    explicit ChecksumState(unsigned digests);
 
     ~ChecksumState();
 
@@ -32,6 +32,9 @@ public:
     std::string Get(unsigned digest);
 
 private:
+    ChecksumState(ChecksumState const &);
+    ChecksumState & operator=(ChecksumState const &);
+
     const unsigned m_digests;
     uint32_t m_crc32;
     uint32_t m_cksum;
