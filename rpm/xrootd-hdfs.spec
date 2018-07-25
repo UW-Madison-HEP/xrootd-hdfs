@@ -1,5 +1,5 @@
 Name: xrootd-hdfs
-Version: 2.0.2
+Version: 2.1.0
 Release: 1%{?dist}
 Summary: HDFS plugin for xrootd
 
@@ -65,6 +65,9 @@ rm $RPM_BUILD_ROOT%{_bindir}/xrootd_hdfs_envcheck
 %{_includedir}/XrdHdfs.hh
 
 %changelog
+* Wed Jul 25 2018 Brian Bockelman <bbockelm@cse.unl.edu> - 2.1.0-1
+- Add support for doing checksums on write.
+
 * Tue Apr 03 2018 Edgar Fajardo <efajardo@physics.ucsd.edu> - 2.0.2-1
 - Change the build requires so it can be built for 3.3 (SOFTWARE-3165)
 

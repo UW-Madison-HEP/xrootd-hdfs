@@ -7,6 +7,7 @@ To enable, add the following line to your Xrootd build:
 
 ```
 ofs.osslib /usr/lib64/libXrdHdfs.so
+ofs.ckslib * /usr/lib64/libXrdHdfs.so
 ```
 
 Once enabled, it will use the default locations to bootstrap the HDFS configuration
