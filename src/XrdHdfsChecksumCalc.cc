@@ -81,7 +81,7 @@ human_readable_evp(const unsigned char *evp, size_t length)
     std::string result; result.reserve(length*2);
     for (idx = 0; idx < length; idx++)
     {
-        char encoded[2];
+        char encoded[3];
         sprintf(encoded, "%02x", evp[idx]);
         result += encoded;
     }
