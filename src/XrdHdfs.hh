@@ -203,6 +203,9 @@ static  int            Emsg(const char *, XrdOucErrInfo&, int, const char *x,
 
 char * GetRealPath(const char *);  // Given a requested pathname, translate it to the HDFS path.  Caller must free() returned space.
 
+virtual int            Lfn2Pfn(const char *Path, char *buff, int blen);
+virtual const char    *Lfn2Pfn(const char *Path, char *buff, int blen, int &rc);
+
 XrdHdfsSys() : XrdOss() {}
 virtual ~XrdHdfsSys() {}
 

@@ -863,6 +863,21 @@ XrdHdfsSys::GetRealPath(const char *path)
    return fname;
 }
 
+int XrdHdfsSys::Lfn2Pfn(const char *oldp, char *newp, int blen)
+{
+    if (the_N2N) return -(the_N2N->lfn2pfn(oldp, newp, blen));
+    if ((int)strlen(oldp) >= blen) return -ENAMETOOLONG;
+    strcpy(newp, oldp);
+    return 0;
+}
+
+const char *XrdHdfsSys::Lfn2Pfn(const char *oldp, char *newp, int blen, int &rc)
+{
+    if (!the_N2N) {rc = 0; return oldp;}
+    if ((rc = -(the_N2N->lfn2pfn(oldp, newp, blen)))) return 0;
+    return newp;
+}
+
 /******************************************************************************/
 /*                                  S t a t                                   */
 /******************************************************************************/
