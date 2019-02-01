@@ -191,7 +191,9 @@ ChecksumManager::Get(const char *pfn, XrdCksData &cks)
     rc = Parse(checksum_contents, values);
     if (rc)
     {
-        return rc;
+        // Override the error code and return -ESRCH; in this case,
+        // XRootD will recompute the checksum.
+        return -ESRCH;
     }
 
     std::string checksum_value;
