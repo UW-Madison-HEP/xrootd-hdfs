@@ -7,6 +7,7 @@
 
 #include "XrdOss/XrdOss.hh"
 #include "XrdSfs/XrdSfsInterface.hh"
+#include "XrdSec/XrdSecEntity.hh"
 #include "XrdSys/XrdSysError.hh"
 
 XrdVERSIONINFO(XrdCksInit, XrdHdfsChecksum)
@@ -36,8 +37,10 @@ XrdCks *XrdCksInit(XrdSysError *eDest,
 
 ChecksumManager::ChecksumManager(XrdSysError& log)
     : XrdCks(&log),
-      m_log(log)
+      m_log(log),
+      m_client(0, 0, &m_client_sec)
 {
+     m_client_sec.name = strdup("root");
 }
 
 
@@ -188,7 +191,9 @@ ChecksumManager::Get(const char *pfn, XrdCksData &cks)
     rc = Parse(checksum_contents, values);
     if (rc)
     {
-        return rc;
+        // Override the error code and return -ESRCH; in this case,
+        // XRootD will recompute the checksum.
+        return -ESRCH;
     }
 
     std::string checksum_value;

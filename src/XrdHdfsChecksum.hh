@@ -12,6 +12,7 @@
 #include <string>
 
 #include "XrdOuc/XrdOucEnv.hh"
+#include "XrdSec/XrdSecEntity.hh"
 
 class XrdSysError;
 class XrdOucEnv;
@@ -106,6 +107,7 @@ private:
     typedef std::vector<ChecksumValue> ChecksumValues;
 
     XrdSysError &m_log;
+    XrdSecEntity m_client_sec;
     XrdOucEnv m_client;
 
     std::string GetChecksumFilename(const char *pfn) const;
