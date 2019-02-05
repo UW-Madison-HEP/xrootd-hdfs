@@ -1,5 +1,5 @@
 Name: xrootd-hdfs
-Version: 2.1.3
+Version: 2.1.4
 Release: 1%{?dist}
 Summary: HDFS plugin for xrootd
 
@@ -67,6 +67,10 @@ rm $RPM_BUILD_ROOT%{_bindir}/xrootd_hdfs_envcheck
 %{_includedir}/XrdHdfs.hh
 
 %changelog
+* Tue Feb 05 2019 Brian Bockelman <brian.bockelman@cern.ch> - 2.1.4-1
+- Recompute checksum on parse failure.
+- Force flush before close to hew closer to open-to-close semantics.
+
 * Tue Sep 11 2018 Brian Bockelman <bbockelm@cse.unl.edu> - 2.1.3-1
 - Implement missing LFN2PFN methods, fixing checksum calculations when name
   translation is used.
