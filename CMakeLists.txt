@@ -70,6 +70,13 @@ install(
   FILES ${CMAKE_SOURCE_DIR}/src/XrdHdfs.hh
   DESTINATION include )
 
+install(
+  FILES
+  ${CMAKE_SOURCE_DIR}/configs/config.d/40-xrootd-hdfs.cfg
+  DESTINATION ${SYSCONF_INSTALL_DIR}/xrootd/config.d
+  PERMISSIONS
+  OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
+
 set_target_properties(
   XrdHdfs
   PROPERTIES
