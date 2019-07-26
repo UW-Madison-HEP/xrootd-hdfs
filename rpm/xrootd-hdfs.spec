@@ -1,5 +1,5 @@
 Name: xrootd-hdfs
-Version: 2.1.4
+Version: 2.1.5
 Release: 1%{?dist}
 Summary: HDFS plugin for xrootd
 
@@ -9,8 +9,8 @@ URL: https://github.com/bbockelm/xrootd-hdfs
 # Generated from:
 # git archive --format=tgz --prefix=%{name}-%{version}/ v%{version} > %{name}-%{version}.tar.gz
 Source0: %{name}-%{version}.tar.gz
-BuildRequires: xrootd-devel >= 1:4.6
-BuildRequires: xrootd-server-devel >= 1:4.6
+BuildRequires: xrootd-devel >= 1:4.9.0
+BuildRequires: xrootd-server-devel >= 1:4.9.0
 BuildRequires: cmake
 BuildRequires: /usr/include/hdfs.h
 BuildRequires: java-devel = 1:1.7.0
@@ -62,11 +62,16 @@ rm $RPM_BUILD_ROOT%{_bindir}/xrootd_hdfs_envcheck
 %{_sysconfdir}/xrootd/xrootd.sample.hdfs.cfg
 %{_libexecdir}/xrootd-hdfs/xrootd_hdfs_envcheck
 %config(noreplace) %{_sysconfdir}/sysconfig/xrootd-hdfs
+%config %{_sysconfdir}/xrootd/config.d/40-xrootd-hdfs.cfg
 
 %files devel
 %{_includedir}/XrdHdfs.hh
 
 %changelog
+* Wed Jul 26 2019 Diego Davila <didavila@ucsd.edu> - 2.1.5-1
+- Adding directory config.d and file config.d/40-xrootd-hdfs.cfg (SOFTWARE-3535)
+- Changing xrootd requirement to 4.9.0
+
 * Tue Feb 05 2019 Brian Bockelman <brian.bockelman@cern.ch> - 2.1.4-1
 - Recompute checksum on parse failure.
 - Force flush before close to hew closer to open-to-close semantics.
