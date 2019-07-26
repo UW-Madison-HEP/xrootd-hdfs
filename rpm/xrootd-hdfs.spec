@@ -68,7 +68,7 @@ rm $RPM_BUILD_ROOT%{_bindir}/xrootd_hdfs_envcheck
 %{_includedir}/XrdHdfs.hh
 
 %changelog
-* Wed Jul 26 2019 Diego Davila <didavila@ucsd.edu> - 2.1.5-1
+* Fri Jul 26 2019 Diego Davila <didavila@ucsd.edu> - 2.1.5-1
 - Adding directory config.d and file config.d/40-xrootd-hdfs.cfg (SOFTWARE-3535)
 - Changing xrootd requirement to 4.9.0
 
