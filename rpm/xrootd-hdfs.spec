@@ -1,5 +1,5 @@
 Name: xrootd-hdfs
-Version: 2.1.5
+Version: 2.1.6
 Release: 1%{?dist}
 Summary: HDFS plugin for xrootd
 
@@ -68,6 +68,10 @@ rm $RPM_BUILD_ROOT%{_bindir}/xrootd_hdfs_envcheck
 %{_includedir}/XrdHdfs.hh
 
 %changelog
+* Fri Jul 26 2019 Diego Davila <didavila@ucsd.edu> - 2.1.6-1 (SOFTWARE-3535)
+- Adding 40-xrootd-hdfs.cfg to CMakeLists.txt
+- Adding .travis.yml
+
 * Fri Jul 26 2019 Diego Davila <didavila@ucsd.edu> - 2.1.5-1
 - Adding directory config.d and file config.d/40-xrootd-hdfs.cfg (SOFTWARE-3535)
 - Changing xrootd requirement to 4.9.0
