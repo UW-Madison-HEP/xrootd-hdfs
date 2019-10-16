@@ -1,5 +1,5 @@
 Name: xrootd-hdfs
-Version: 2.1.6
+Version: 2.1.7
 Release: 1%{?dist}
 Summary: HDFS plugin for xrootd
 
