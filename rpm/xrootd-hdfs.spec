@@ -9,9 +9,9 @@ URL: https://github.com/bbockelm/xrootd-hdfs
 # Generated from:
 # git archive --format=tgz --prefix=%{name}-%{version}/ v%{version} > %{name}-%{version}.tar.gz
 Source0: %{name}-%{version}.tar.gz
-BuildRequires: xrootd-server-devel >= 1:4.10-1
+BuildRequires: xrootd-server-devel >= 1:4.10.0-1
 BuildRequires: xrootd-server-devel <  1:4.11.0-1
-BuildRequires: xrootd-devel >= 1:4.10-1
+BuildRequires: xrootd-devel >= 1:4.10.0-1
 BuildRequires: xrootd-devel <  1:4.11.0-1
 BuildRequires: cmake
 BuildRequires: /usr/include/hdfs.h
@@ -20,7 +20,7 @@ BuildRequires: jpackage-utils
 BuildRequires: openssl-devel
 BuildRequires: zlib-devel
 Requires: hadoop-client >= 2.0.0+545-1.cdh4.1.1
-Requires: xrootd-server >= 1:4.10-1
+Requires: xrootd-server >= 1:4.10.0-1
 Requires: xrootd-server <  1:4.11.0-1
 
 %package devel
