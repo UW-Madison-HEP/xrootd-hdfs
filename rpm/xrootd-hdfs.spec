@@ -70,6 +70,10 @@ rm $RPM_BUILD_ROOT%{_bindir}/xrootd_hdfs_envcheck
 %{_includedir}/XrdHdfs.hh
 
 %changelog
+* Mon Oct 21 2019 Carl Edquist <edquist@cs.wisc.edu> - 2.1.7-1
+- Enable checksum verification (SOFTWARE-3803)
+- Add version requirements for RCs (SOFTWARE-3767)
+
 * Fri Jul 26 2019 Diego Davila <didavila@ucsd.edu> - 2.1.6-1
 - Adding 40-xrootd-hdfs.cfg to CMakeLists.txt (SOFTWARE-3535)
 - Adding .travis.yml
