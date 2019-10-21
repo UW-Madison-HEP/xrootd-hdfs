@@ -1,18 +1,20 @@
 Name: xrootd-hdfs
 Version: 2.1.7
-Release: 1%{?dist}
+Release: 2%{?dist}
 Summary: HDFS plugin for xrootd
 
 Group: System Environment/Development
 License: BSD
 URL: https://github.com/bbockelm/xrootd-hdfs
-# Generated from:
-# git archive --format=tgz --prefix=%{name}-%{version}/ v%{version} > %{name}-%{version}.tar.gz
 Source0: %{name}-%{version}.tar.gz
-BuildRequires: xrootd-server-devel >= 1:4.10.0-1
-BuildRequires: xrootd-server-devel <  1:4.11.0-1
-BuildRequires: xrootd-devel >= 1:4.10.0-1
-BuildRequires: xrootd-devel <  1:4.11.0-1
+
+%define xrootd_current 4.11
+%define xrootd_next %(echo %xrootd_current | awk '{print $1,$2+1}' FS=. OFS=.)
+
+BuildRequires: xrootd-server-devel >= 1:%{xrootd_current}.0-1
+BuildRequires: xrootd-server-devel <  1:%{xrootd_next}.0-1
+BuildRequires: xrootd-devel >= 1:%{xrootd_current}.0-1
+BuildRequires: xrootd-devel <  1:%{xrootd_next}.0-1
 BuildRequires: cmake
 BuildRequires: /usr/include/hdfs.h
 BuildRequires: java-devel = 1:1.7.0
@@ -20,8 +22,8 @@ BuildRequires: jpackage-utils
 BuildRequires: openssl-devel
 BuildRequires: zlib-devel
 Requires: hadoop-client >= 2.0.0+545-1.cdh4.1.1
-Requires: xrootd-server >= 1:4.10.0-1
-Requires: xrootd-server <  1:4.11.0-1
+Requires: xrootd-server >= 1:%{xrootd_current}.0-1
+Requires: xrootd-server <  1:%{xrootd_next}.0-1
 
 %package devel
 Summary: Development headers for Xrootd HDFS plugin
@@ -72,8 +74,15 @@ rm $RPM_BUILD_ROOT%{_bindir}/xrootd_hdfs_envcheck
 %{_includedir}/XrdHdfs.hh
 
 %changelog
-* Fri Jul 26 2019 Diego Davila <didavila@ucsd.edu> - 2.1.6-1 (SOFTWARE-3535)
-- Adding 40-xrootd-hdfs.cfg to CMakeLists.txt
+* Mon Oct 21 2019 Carl Edquist <edquist@cs.wisc.edu> - 2.1.7-2
+- Rebuild for xrootd 4.11 (SOFTWARE-3830)
+
+* Mon Oct 21 2019 Carl Edquist <edquist@cs.wisc.edu> - 2.1.7-1
+- Enable checksum verification (SOFTWARE-3803)
+- Add version requirements for RCs (SOFTWARE-3767)
+
+* Fri Jul 26 2019 Diego Davila <didavila@ucsd.edu> - 2.1.6-1
+- Adding 40-xrootd-hdfs.cfg to CMakeLists.txt (SOFTWARE-3535)
 - Adding .travis.yml
 
 * Fri Jul 26 2019 Diego Davila <didavila@ucsd.edu> - 2.1.5-1
