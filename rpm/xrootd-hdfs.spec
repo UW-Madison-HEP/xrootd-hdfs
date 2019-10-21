@@ -6,8 +6,6 @@ Summary: HDFS plugin for xrootd
 Group: System Environment/Development
 License: BSD
 URL: https://github.com/bbockelm/xrootd-hdfs
-# Generated from:
-# git archive --format=tgz --prefix=%{name}-%{version}/ v%{version} > %{name}-%{version}.tar.gz
 Source0: %{name}-%{version}.tar.gz
 BuildRequires: xrootd-server-devel >= 1:4.10.0-1
 BuildRequires: xrootd-server-devel <  1:4.11.0-1
@@ -72,8 +70,8 @@ rm $RPM_BUILD_ROOT%{_bindir}/xrootd_hdfs_envcheck
 %{_includedir}/XrdHdfs.hh
 
 %changelog
-* Fri Jul 26 2019 Diego Davila <didavila@ucsd.edu> - 2.1.6-1 (SOFTWARE-3535)
-- Adding 40-xrootd-hdfs.cfg to CMakeLists.txt
+* Fri Jul 26 2019 Diego Davila <didavila@ucsd.edu> - 2.1.6-1
+- Adding 40-xrootd-hdfs.cfg to CMakeLists.txt (SOFTWARE-3535)
 - Adding .travis.yml
 
 * Fri Jul 26 2019 Diego Davila <didavila@ucsd.edu> - 2.1.5-1
