@@ -45,7 +45,7 @@ target_link_libraries(XrdHdfs ${XROOTD_UTILS} ${DL_LIB} ${LIBCRYPTO_LIBRARIES} $
 set_target_properties(XrdHdfs PROPERTIES LINK_FLAGS "-Wl,--version-script=${CMAKE_SOURCE_DIR}/src/export-lib-symbols")
 
 add_library(XrdHdfsReal MODULE src/XrdHdfs.cc src/XrdHdfsConfig.cc src/XrdHdfs.hh src/XrdHdfsChecksum.cc src/XrdHdfsChecksumCalc.cc)
-target_link_libraries(XrdHdfsReal ${HDFS_LIB} ${XROOTD_UTILS} ${LIBCRYPTO_LIBRARIES} ${ZLIB_LIBRARIES})
+target_link_libraries(XrdHdfsReal ${HDFS_LIB} ${XROOTD_UTILS} ${XROOTD_SERVER} ${LIBCRYPTO_LIBRARIES} ${ZLIB_LIBRARIES})
 set_target_properties(XrdHdfsReal PROPERTIES LINK_FLAGS "-Wl,--version-script=${CMAKE_SOURCE_DIR}/src/export-lib-symbols")
 
 add_executable(xrootd_hdfs_envcheck src/XrdHdfsEnvCheck.cc)
