@@ -11,10 +11,10 @@ Source0: %{name}-%{version}.tar.gz
 %define xrootd_current 4.12
 %define xrootd_next %(echo %xrootd_current | awk '{print $1,$2+1}' FS=. OFS=.)
 
-BuildRequires: xrootd-server-devel >= 1:%{xrootd_current}.0-1
-BuildRequires: xrootd-server-devel <  1:%{xrootd_next}.0-1
-BuildRequires: xrootd-devel >= 1:%{xrootd_current}.0-1
-BuildRequires: xrootd-devel <  1:%{xrootd_next}.0-1
+BuildRequires: xrootd-server-devel >= 1:%{xrootd_current}.0-0
+BuildRequires: xrootd-server-devel <  1:%{xrootd_next}.0-0
+BuildRequires: xrootd-devel >= 1:%{xrootd_current}.0-0
+BuildRequires: xrootd-devel <  1:%{xrootd_next}.0-0
 BuildRequires: cmake
 BuildRequires: /usr/include/hdfs.h
 BuildRequires: java-devel = 1:1.7.0
@@ -22,8 +22,8 @@ BuildRequires: jpackage-utils
 BuildRequires: openssl-devel
 BuildRequires: zlib-devel
 Requires: hadoop-client >= 2.0.0+545-1.cdh4.1.1
-Requires: xrootd-server >= 1:%{xrootd_current}.0-1
-Requires: xrootd-server <  1:%{xrootd_next}.0-1
+Requires: xrootd-server >= 1:%{xrootd_current}.0-0
+Requires: xrootd-server <  1:%{xrootd_next}.0-0
 
 %package devel
 Summary: Development headers for Xrootd HDFS plugin
