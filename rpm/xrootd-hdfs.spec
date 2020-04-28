@@ -1,6 +1,6 @@
 Name: xrootd-hdfs
 Version: 2.1.7
-Release: 3%{?dist}
+Release: 4%{?dist}
 Summary: HDFS plugin for xrootd
 
 Group: System Environment/Development
@@ -8,7 +8,7 @@ License: BSD
 URL: https://github.com/bbockelm/xrootd-hdfs
 Source0: %{name}-%{version}.tar.gz
 
-%define xrootd_current 4.11
+%define xrootd_current 4.12
 %define xrootd_next %(echo %xrootd_current | awk '{print $1,$2+1}' FS=. OFS=.)
 
 BuildRequires: xrootd-server-devel >= 1:%{xrootd_current}.0-1
@@ -74,7 +74,7 @@ rm $RPM_BUILD_ROOT%{_bindir}/xrootd_hdfs_envcheck
 %{_includedir}/XrdHdfs.hh
 
 %changelog
-* Fri Apr 24 2020 Edgar Fajardo <emfajard@ucsd.edu> - 2.1.7-3
+* Fri Apr 24 2020 Edgar Fajardo <emfajard@ucsd.edu> - 2.1.7-4
 - Rebuild for xrootd 4.12 (SOFTWARE-4063)
 
 * Mon Oct 21 2019 Carl Edquist <edquist@cs.wisc.edu> - 2.1.7-2
