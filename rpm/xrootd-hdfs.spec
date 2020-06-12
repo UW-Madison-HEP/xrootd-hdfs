@@ -16,7 +16,7 @@ BuildRequires: xrootd-server-devel <  1:%{xrootd_next}.0-0
 BuildRequires: xrootd-devel >= 1:%{xrootd_current}.0-0
 BuildRequires: xrootd-devel <  1:%{xrootd_next}.0-0
 BuildRequires: cmake
-BuildRequires: hadoop-libhdfs-devel
+BuildRequires: /usr/include/hdfs.h
 BuildRequires: java-devel = 1:1.7.0
 BuildRequires: jpackage-utils
 BuildRequires: openssl-devel
