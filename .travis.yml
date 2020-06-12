@@ -1,6 +1,7 @@
 sudo: required
 env:
   - REPO_NAME=${TRAVIS_REPO_SLUG#*/}
+  - KOJI_BUILD_TAG=osg-3.5-el7-build
 
 git:
   depth: false
