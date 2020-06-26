@@ -9,6 +9,12 @@ find_package( Hdfs REQUIRED )
 find_package( Jvm REQUIRED )
 find_package( Dl REQUIRED )
 
+if(NOT XROOTD_PLUGIN_VERSION)
+  find_program(XROOTD_CONFIG_EXECUTABLE xrootd-config)
+  exec_program(${XROOTD_CONFIG_EXECUTABLE} ARGS "--plugin-version" OUTPUT_VARIABLE XROOTD_PLUGIN_VERSION RETURN_VALUE RETVAR)
+  set(XROOTD_PLUGIN_VERSION ${XROOTD_PLUGIN_VERSION} CACHE INTERNAL "")
+endif()
+
 include (FindPkgConfig)
 pkg_check_modules(LIBCRYPTO REQUIRED libcrypto)
 pkg_check_modules(ZLIB REQUIRED zlib)
@@ -42,11 +48,11 @@ include_directories( "${PROJECT_SOURCE_DIR}" "${XROOTD_INCLUDES}" )
 
 add_library(XrdHdfs MODULE src/XrdHdfsBootstrap.cc src/XrdHdfsChecksum.cc src/XrdHdfsChecksumCalc.cc)
 target_link_libraries(XrdHdfs ${XROOTD_UTILS} ${DL_LIB} ${LIBCRYPTO_LIBRARIES} ${ZLIB_LIBRARIES})
-set_target_properties(XrdHdfs PROPERTIES LINK_FLAGS "-Wl,--version-script=${CMAKE_SOURCE_DIR}/src/export-lib-symbols")
+set_target_properties(XrdHdfs PROPERTIES OUTPUT_NAME "XrdHdfs-${XROOTD_PLUGIN_VERSION}" LINK_FLAGS "-Wl,--version-script=${CMAKE_SOURCE_DIR}/src/export-lib-symbols")
 
 add_library(XrdHdfsReal MODULE src/XrdHdfs.cc src/XrdHdfsConfig.cc src/XrdHdfs.hh src/XrdHdfsChecksum.cc src/XrdHdfsChecksumCalc.cc)
 target_link_libraries(XrdHdfsReal ${HDFS_LIB} ${XROOTD_UTILS} ${LIBCRYPTO_LIBRARIES} ${ZLIB_LIBRARIES})
-set_target_properties(XrdHdfsReal PROPERTIES LINK_FLAGS "-Wl,--version-script=${CMAKE_SOURCE_DIR}/src/export-lib-symbols")
+set_target_properties(XrdHdfsReal PROPERTIES OUTPUT_NAME "XrdHdfsReal-${XROOTD_PLUGIN_VERSION}" LINK_FLAGS "-Wl,--version-script=${CMAKE_SOURCE_DIR}/src/export-lib-symbols")
 
 add_executable(xrootd_hdfs_envcheck src/XrdHdfsEnvCheck.cc)
 
