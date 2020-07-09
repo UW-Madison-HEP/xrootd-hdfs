@@ -47,11 +47,11 @@ include_directories(${HDFS_INCLUDES} ${JVM_INCLUDES} ${JVM_MD_INCLUDES} ${LIBCRY
 include_directories( "${PROJECT_SOURCE_DIR}" "${XROOTD_INCLUDES}" )
 
 add_library(XrdHdfs MODULE src/XrdHdfsBootstrap.cc src/XrdHdfsChecksum.cc src/XrdHdfsChecksumCalc.cc)
-target_link_libraries(XrdHdfs ${XROOTD_UTILS} ${DL_LIB} ${LIBCRYPTO_LIBRARIES} ${ZLIB_LIBRARIES})
+target_link_libraries(XrdHdfs ${XROOTD_UTILS} ${XROOTD_SERVER} ${DL_LIB} ${LIBCRYPTO_LIBRARIES} ${ZLIB_LIBRARIES})
 set_target_properties(XrdHdfs PROPERTIES OUTPUT_NAME "XrdHdfs-${XROOTD_PLUGIN_VERSION}" LINK_FLAGS "-Wl,--version-script=${CMAKE_SOURCE_DIR}/src/export-lib-symbols")
 
 add_library(XrdHdfsReal MODULE src/XrdHdfs.cc src/XrdHdfsConfig.cc src/XrdHdfs.hh src/XrdHdfsChecksum.cc src/XrdHdfsChecksumCalc.cc)
-target_link_libraries(XrdHdfsReal ${HDFS_LIB} ${XROOTD_UTILS} ${LIBCRYPTO_LIBRARIES} ${ZLIB_LIBRARIES})
+target_link_libraries(XrdHdfsReal ${HDFS_LIB} ${XROOTD_UTILS} ${XROOTD_SERVER} ${LIBCRYPTO_LIBRARIES} ${ZLIB_LIBRARIES})
 set_target_properties(XrdHdfsReal PROPERTIES OUTPUT_NAME "XrdHdfsReal-${XROOTD_PLUGIN_VERSION}" LINK_FLAGS "-Wl,--version-script=${CMAKE_SOURCE_DIR}/src/export-lib-symbols")
 
 add_executable(xrootd_hdfs_envcheck src/XrdHdfsEnvCheck.cc)
