@@ -1,6 +1,6 @@
 Name: xrootd-hdfs
 Version: 2.1.7
-Release: 8%{?dist}
+Release: 9%{?dist}
 Summary: HDFS plugin for xrootd
 
 Group: System Environment/Development
@@ -9,12 +9,13 @@ URL: https://github.com/bbockelm/xrootd-hdfs
 Source0: %{name}-%{version}.tar.gz
 
 %define xrootd_current_major 4
+%define xrootd_current_minor 12
 %define xrootd_next_major 5
 
-BuildRequires: xrootd-server-devel >= 1:%{xrootd_current_major}.0.0-0
-BuildRequires: xrootd-server-devel <  1:%{xrootd_next_major}.0.0-0
-BuildRequires: xrootd-devel >= 1:%{xrootd_current_major}.0.0-0
-BuildRequires: xrootd-devel <  1:%{xrootd_next_major}.0.0-0
+BuildRequires: xrootd-server-devel >= 1:%{xrootd_current_major}
+BuildRequires: xrootd-server-devel <  1:%{xrootd_next_major}
+BuildRequires: xrootd-devel >= 1:%{xrootd_current_major}
+BuildRequires: xrootd-devel <  1:%{xrootd_next_major}
 BuildRequires: cmake
 BuildRequires: /usr/include/hdfs.h
 BuildRequires: java-devel = 1:1.7.0
@@ -22,8 +23,8 @@ BuildRequires: jpackage-utils
 BuildRequires: openssl-devel
 BuildRequires: zlib-devel
 Requires: hadoop-client >= 2.0.0+545-1.cdh4.1.1
-Requires: xrootd-server >= 1:%{xrootd_current_major}.0.0-0
-Requires: xrootd-server <  1:%{xrootd_next_major}.0.0-0
+Requires: xrootd-server >= 1:%{xrootd_current_major}.%{xrootd_current_minor}
+Requires: xrootd-server <  1:%{xrootd_next_major}.0.0-1
 
 %package devel
 Summary: Development headers for Xrootd HDFS plugin
@@ -74,6 +75,9 @@ rm $RPM_BUILD_ROOT%{_bindir}/xrootd_hdfs_envcheck
 %{_includedir}/XrdHdfs.hh
 
 %changelog
+* Tue Jul 14 2020 Diego Davila <didavila@ucsd.edu> - 2.1.7-9
+- updating XRootD adding minor version to requirements (SOFTWARE-4137)
+
 * Fri Jun 26 2020 Diego Davila <didavila@ucsd.edu> - 2.1.7-8
 - updating XRootD requirements to only the major version (SOFTWARE-4137)
 
