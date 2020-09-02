@@ -1,6 +1,6 @@
 Name: xrootd-hdfs
-Version: 2.1.7
-Release: 9%{?dist}
+Version: 2.1.8
+Release: 1%{?dist}
 Summary: HDFS plugin for xrootd
 
 Group: System Environment/Development
@@ -75,6 +75,9 @@ rm $RPM_BUILD_ROOT%{_bindir}/xrootd_hdfs_envcheck
 %{_includedir}/XrdHdfs.hh
 
 %changelog
+* Wed Sep 02 2020 Carl Edquist <edquist@cs.wisc.edu> - 2.1.8-1
+- Load versioned libXrdHdfsReal .so name (SOFTWARE-4245)
+
 * Tue Jul 14 2020 Diego Davila <didavila@ucsd.edu> - 2.1.7-9
 - updating XRootD adding minor version to requirements (SOFTWARE-4137)
 
