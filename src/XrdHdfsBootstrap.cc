@@ -82,7 +82,8 @@ static XrdOss *Bootstrap(XrdOss *native_oss,XrdSysLogger *Logger, const char *co
    loadJvm();
  
    HdfsBootstrapEroute.logger(Logger);
-   if (!(myLib = new XrdSysPlugin(&HdfsBootstrapEroute, "libXrdHdfsReal.so"))) return 0;
+   myLib = new XrdSysPlugin(&HdfsBootstrapEroute, "libXrdHdfsReal-" XRDPLUGIN_SOVERSION ".so");
+   if (!myLib) return 0;
 
 // Now get the entry point of the object creator
 //
