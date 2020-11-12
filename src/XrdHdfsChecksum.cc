@@ -162,12 +162,19 @@ ChecksumManager::Init(const char * /*config_fn*/, const char *default_checksum)
 }
 
 std::string
-ChecksumManager::GetChecksumFilename(const char * pfn) const
+ChecksumManager::GetChecksumFilename(const char * lfn) const
 {
-    if (!pfn) {return "";}
+    if (!lfn) {return "";}
 
-    std::string filename = "/cksums/";
-    filename += pfn;
+    std::vector<char> pfn;
+    int rc;
+
+    pfn.reserve(MAXPATHLEN+8);
+    g_hdfs_oss->Lfn2Pfn(lfn, &pfn[0], pfn.capacity(), rc);
+
+    if (rc) {return "";}
+
+    std::string filename = "/cksums/" + std::string(pfn.data());
     return filename;
 }
 
