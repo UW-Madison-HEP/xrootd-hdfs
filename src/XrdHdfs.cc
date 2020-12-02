@@ -548,8 +548,11 @@ int XrdHdfsFile::Close(long long int *)
    if (m_state)
    {
        m_state->Finalize();
-       XrdHdfs::ChecksumManager manager(HdfsEroute);
-       manager.Set(fname, *m_state);
+       if (ret == XrdOssOK) {
+           // Only write checksum file if close() was successful
+           XrdHdfs::ChecksumManager manager(HdfsEroute);
+           manager.Set(fname, *m_state);
+       }
        delete m_state;
        m_state = NULL;
    }
