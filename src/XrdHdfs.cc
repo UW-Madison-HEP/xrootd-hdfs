@@ -23,6 +23,8 @@
 #include <map>
 
 #include "XrdVersion.hh"
+#include "XrdSec/XrdSecEntity.hh"
+#include "XrdSec/XrdSecEntityAttr.hh"
 #include "XrdSys/XrdSysError.hh"
 #include "XrdSys/XrdSysHeaders.hh"
 #include "XrdSys/XrdSysLogger.hh"
@@ -80,13 +82,15 @@ namespace
 #endif
    }
 
-const char *
+
+std::string
 ExtractAuthName(const XrdOucEnv *client)
 {
     const XrdSecEntity *sec;
-    if (client && (sec = client->secEnv()) && sec->name)
+    if (client && (sec = client->secEnv()))
     {
-        return sec->name;
+        std::string username;
+        return sec->eaAPI->Get("request.name", username) ? username : (sec->name ? sec->name : "nobody");
     }
     else
     {
@@ -96,9 +100,9 @@ ExtractAuthName(const XrdOucEnv *client)
 
 hdfsFS hadoop_connect(const XrdOucEnv *client)
 {
-    const char *username = ExtractAuthName(client);
+    std::string username = ExtractAuthName(client);
     errno = 0;
-    return hadoop_connect("default", 0, username);
+    return hadoop_connect("default", 0, username.c_str());
 }
 
 }
