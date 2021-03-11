@@ -1,5 +1,5 @@
 Name: xrootd-hdfs
-Version: 2.1.8
+Version: 2.2.0
 Release: 1%{?dist}
 Summary: HDFS plugin for xrootd
 
@@ -75,6 +75,11 @@ rm $RPM_BUILD_ROOT%{_bindir}/xrootd_hdfs_envcheck
 %{_includedir}/XrdHdfs.hh
 
 %changelog
+* Thu Mar 11 2021 Carl Edquist <edquist@cs.wisc.edu> - 2.2.0-1
+- Build against xrootd 5 (SOFTWARE-3923, #32)
+- Only write checksum file if hdfsCloseFile() was successful (#34)
+- Add support for new extended attribute API for XrdSecEntity (#35)
+
 * Wed Sep 02 2020 Carl Edquist <edquist@cs.wisc.edu> - 2.1.8-1
 - Load versioned libXrdHdfsReal .so name (SOFTWARE-4245)
 
