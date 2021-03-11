@@ -8,9 +8,9 @@ License: BSD
 URL: https://github.com/bbockelm/xrootd-hdfs
 Source0: %{name}-%{version}.tar.gz
 
-%define xrootd_current_major 4
-%define xrootd_current_minor 12
-%define xrootd_next_major 5
+%define xrootd_current_major 5
+%define xrootd_current_minor 1
+%define xrootd_next_major 6
 
 BuildRequires: xrootd-server-devel >= 1:%{xrootd_current_major}
 BuildRequires: xrootd-server-devel <  1:%{xrootd_next_major}
