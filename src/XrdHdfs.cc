@@ -373,8 +373,7 @@ bool XrdHdfsFile::Connect(const XrdOucEnv &client)
     {
         hadoop_disconnect(m_fs);
     }
-    const XrdSecEntity *sec = const_cast<XrdOucEnv&>(client).secEnv();
-    m_fs = hadoop_connect("default", 0, (sec && sec->name) ? sec->name : "nobody");
+    m_fs = hadoop_connect(&client);
     return m_fs;
 }
 
