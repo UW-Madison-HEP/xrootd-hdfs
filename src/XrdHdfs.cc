@@ -695,6 +695,7 @@ int XrdHdfsFile::Read(XrdSfsAio *aiop)
 {
 
 // Execute this request in a synchronous fashion
+// Will not be called as XrdHdfsSys::Features() advertises no AIO support.
 //
    aiop->Result = this->Read((void *)aiop->sfsAio.aio_buf, aiop->sfsAio.aio_offset,
                              aiop->sfsAio.aio_nbytes);
@@ -752,6 +753,7 @@ int XrdHdfsFile::Write(XrdSfsAio *aiop)
 {
 
 // Execute this request in a synchronous fashion
+// Will not be called as XrdHdfsSys::Features() advertises no AIO support.
 //
    aiop->Result = this->Write((const char *)aiop->sfsAio.aio_buf, aiop->sfsAio.aio_offset,
                               aiop->sfsAio.aio_nbytes);
