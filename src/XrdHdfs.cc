@@ -272,7 +272,7 @@ int XrdHdfsDirectory::Readdir(char * buff, int blen)
       m_stat_buf->st_atime    = fileInfo.mLastMod;
       m_stat_buf->st_ctime    = fileInfo.mLastMod;
       m_stat_buf->st_dev      = 0;
-      m_stat_buf->st_ino      = 0;
+      m_stat_buf->st_ino      = 1; // XRootD assumes offline status when both dev and ino are zero
    }
 
    return XrdOssOK;
@@ -790,7 +790,7 @@ int XrdHdfsFile::Fstat(struct stat     *buf)         // Out
    buf->st_atime    = fileInfo->mLastMod;
    buf->st_ctime    = fileInfo->mLastMod;
    buf->st_dev      = 0;
-   buf->st_ino      = 0;
+   buf->st_ino      = 1; // XRootD assumes offline status when both dev and ino are zero
 
    hdfsFreeFileInfo(fileInfo, 1);
 
@@ -960,7 +960,7 @@ int XrdHdfsSys::Stat(const  char    *path,    // In
    buf->st_atime    = fileInfo->mLastMod;
    buf->st_ctime    = fileInfo->mLastMod;
    buf->st_dev      = 0;
-   buf->st_ino      = 0;
+   buf->st_ino      = 1; // XRootD assumes offline status when both dev and ino are zero
 
    hdfsFreeFileInfo(fileInfo, 1);
 
