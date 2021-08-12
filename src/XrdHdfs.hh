@@ -173,6 +173,9 @@ public:
         int            Create(const char *, const char *, mode_t, XrdOucEnv &,
                               int opts=0);
 
+        uint64_t       Features()  // Turn async I/O off for hdfs
+                       {return XRDOSS_HASNAIO;}
+
         int            Init(XrdSysLogger *, const char *);
 
         int            getStats(char *buff, int blen) {return 0;}
