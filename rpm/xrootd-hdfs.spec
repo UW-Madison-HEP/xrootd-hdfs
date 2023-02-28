@@ -1,15 +1,15 @@
 Name: xrootd-hdfs
-Version: 2.2.0
+Version: 2.2.1
 Release: 1%{?dist}
 Summary: HDFS plugin for xrootd
 
 Group: System Environment/Development
 License: BSD
-URL: https://github.com/bbockelm/xrootd-hdfs
+URL: https://github.com/UW-Madison-HEP/xrootd-hdfs
 Source0: %{name}-%{version}.tar.gz
 
 %define xrootd_current_major 5
-%define xrootd_current_minor 1
+%define xrootd_current_minor 4
 %define xrootd_next_major 6
 
 BuildRequires: xrootd-server-devel >= 1:%{xrootd_current_major}
@@ -75,6 +75,11 @@ rm $RPM_BUILD_ROOT%{_bindir}/xrootd_hdfs_envcheck
 %{_includedir}/XrdHdfs.hh
 
 %changelog
+* Tue Feb 28 2023 Carl Vuosalo <covuosalo@wisc.edu> - 2.2.1
+- Find correct user name when token is used.
+- Advertize that AIO is not supported.
+- Add Apache license.
+
 * Thu Mar 11 2021 Carl Edquist <edquist@cs.wisc.edu> - 2.2.0-1
 - Build against xrootd 5 (SOFTWARE-3923, #32)
 - Only write checksum file if hdfsCloseFile() was successful (#34)
