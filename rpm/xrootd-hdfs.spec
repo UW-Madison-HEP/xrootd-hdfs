@@ -9,7 +9,7 @@ URL: https://github.com/UW-Madison-HEP/xrootd-hdfs
 Source0: %{name}-%{version}.tar.gz
 
 %define xrootd_current_major 5
-%define xrootd_current_minor 4
+%define xrootd_current_minor 5
 %define xrootd_next_major 6
 
 BuildRequires: xrootd-server-devel >= 1:%{xrootd_current_major}
