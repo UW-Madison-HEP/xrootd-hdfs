@@ -32,15 +32,6 @@ fi
 # SOFTWARE-2387
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${HADOOP_LIB_DIR}/lib/native
 
-# Pulls all jars from hadoop client package and conf files from HADOOP_CONF_DIR
-for jar in ${HADOOP_HOME}/client/*.jar; do
-  CLASSPATH+="$jar:"
-done
-CLASSPATH+="${HADOOP_CONF_DIR:-${HADOOP_HOME}/etc/hadoop}"
-
-
-#OSG change: needed to pick up xml defaults
-CLASSPATH="/etc/hadoop/conf:$CLASSPATH"
-
+CLASSPATH=$(hadoop classpath 2>/dev/null)
 export CLASSPATH=$CLASSPATH
 

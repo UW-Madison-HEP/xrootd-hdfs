@@ -1,5 +1,5 @@
 Name: xrootd-hdfs
-Version: 2.2.1
+Version: 2.2.2
 Release: 1%{?dist}
 Summary: HDFS plugin for xrootd
 
@@ -9,7 +9,7 @@ URL: https://github.com/UW-Madison-HEP/xrootd-hdfs
 Source0: %{name}-%{version}.tar.gz
 
 %define xrootd_current_major 5
-%define xrootd_current_minor 4
+%define xrootd_current_minor 5
 %define xrootd_next_major 6
 
 BuildRequires: xrootd-server-devel >= 1:%{xrootd_current_major}
@@ -18,11 +18,12 @@ BuildRequires: xrootd-devel >= 1:%{xrootd_current_major}
 BuildRequires: xrootd-devel <  1:%{xrootd_next_major}
 BuildRequires: cmake
 BuildRequires: /usr/include/hdfs.h
-BuildRequires: java-devel = 1:1.7.0
+BuildRequires: java-devel = 1:1.8.0
 BuildRequires: jpackage-utils
 BuildRequires: openssl-devel
 BuildRequires: zlib-devel
-Requires: hadoop-client >= 2.0.0+545-1.cdh4.1.1
+Requires: hadoop-libhdfs >= 3.3.4
+Requires: hadoop-libhdfs < 3.4.0
 Requires: xrootd-server >= 1:%{xrootd_current_major}.%{xrootd_current_minor}
 Requires: xrootd-server <  1:%{xrootd_next_major}.0.0-1
 
