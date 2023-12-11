@@ -1,6 +1,6 @@
 Name: xrootd-hdfs
-Version: 2.2.2
-Release: 1%{?dist}
+Version: 2.3.0
+Release: 0%{?dist}
 Summary: HDFS plugin for xrootd
 
 Group: System Environment/Development
@@ -86,6 +86,7 @@ rm $RPM_BUILD_ROOT%{_bindir}/xrootd_hdfs_envcheck
 - Bump xrootd version to 5.6.
 - Improve java version build depends
 - make libXrdHdfs globbing compatible with EL8
+- Fix runtime errors due to changing C/C++ compiler behavior. Thanks to Carl Vuosalo and Dan Bradley
 
 * Tue Feb 28 2023 Carl Vuosalo <covuosalo@wisc.edu> - 2.2.1
 - Find correct user name when token is used.
