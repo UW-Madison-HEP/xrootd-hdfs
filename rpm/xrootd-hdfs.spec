@@ -9,23 +9,30 @@ URL: https://github.com/UW-Madison-HEP/xrootd-hdfs
 Source0: %{name}-%{version}.tar.gz
 
 %define xrootd_current_major 5
-%define xrootd_current_minor 5
+%define xrootd_current_minor 6
 %define xrootd_next_major 6
 
 BuildRequires: xrootd-server-devel >= 1:%{xrootd_current_major}
 BuildRequires: xrootd-server-devel <  1:%{xrootd_next_major}
 BuildRequires: xrootd-devel >= 1:%{xrootd_current_major}
 BuildRequires: xrootd-devel <  1:%{xrootd_next_major}
+Requires: xrootd-server >= 1:%{xrootd_current_major}.%{xrootd_current_minor}
+Requires: xrootd-server <  1:%{xrootd_next_major}.0.0-1
+BuildRequires: xrootd-server-devel >= 1:%{xrootd_current_major}
+BuildRequires: xrootd-server-devel <  1:%{xrootd_next_major}
+BuildRequires: xrootd-devel >= 1:%{xrootd_current_major}
+BuildRequires: xrootd-devel <  1:%{xrootd_next_major}
+Requires: xrootd-server >= 1:%{xrootd_current_major}.%{xrootd_current_minor}
+Requires: xrootd-server <  1:%{xrootd_next_major}.0.0-1
 BuildRequires: cmake
 BuildRequires: /usr/include/hdfs.h
-BuildRequires: java-devel = 1:1.8.0
+BuildRequires: java-devel >= 1:1.8.0
+BuildRequires: java-devel < 1:1.8.999
 BuildRequires: jpackage-utils
 BuildRequires: openssl-devel
 BuildRequires: zlib-devel
-Requires: hadoop-libhdfs >= 3.3.4
+Requires: hadoop-libhdfs >= 3.3.0
 Requires: hadoop-libhdfs < 3.4.0
-Requires: xrootd-server >= 1:%{xrootd_current_major}.%{xrootd_current_minor}
-Requires: xrootd-server <  1:%{xrootd_next_major}.0.0-1
 
 %package devel
 Summary: Development headers for Xrootd HDFS plugin
@@ -65,7 +72,7 @@ rm $RPM_BUILD_ROOT%{_bindir}/xrootd_hdfs_envcheck
 %files
 %defattr(-,root,root,-)
 %{_libdir}/libXrdHdfs-*.so
-%{_libdir}/libXrdHdfs-*.so.*
+%{_libdir}/libXrdHdfs-*.so*
 %{_libdir}/libXrdHdfsReal-*.so
 %{_sysconfdir}/xrootd/xrootd.sample.hdfs.cfg
 %{_libexecdir}/xrootd-hdfs/xrootd_hdfs_envcheck
@@ -76,6 +83,10 @@ rm $RPM_BUILD_ROOT%{_bindir}/xrootd_hdfs_envcheck
 %{_includedir}/XrdHdfs.hh
 
 %changelog
+- Bump xrootd version to 5.6.
+- Improve java version build depends
+- make libXrdHdfs globbing compatible with EL8
+
 * Tue Feb 28 2023 Carl Vuosalo <covuosalo@wisc.edu> - 2.2.1
 - Find correct user name when token is used.
 - Advertize that AIO is not supported.
