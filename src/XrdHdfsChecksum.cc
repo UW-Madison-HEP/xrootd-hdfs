@@ -344,8 +344,8 @@ ChecksumManager::Set(const char *pfn, XrdCksData &cks, int mtime)
 
     std::string checksum_name(cks.Name);
     std::transform(checksum_name.begin(), checksum_name.end(), checksum_name.begin(), ::toupper);
-    std::vector<char> checksum_value; checksum_value.reserve(cks.Length*2 + 1);
-    cks.Get(&checksum_value[0], cks.Length*2 + 1);
+    std::vector<char> checksum_value(cks.Length*2 + 1);
+    cks.Get(checksum_value.data(), cks.Length*2 + 1);
     bool overwrote_value = false;
     bool changed_value = true;
 
@@ -358,13 +358,13 @@ ChecksumManager::Set(const char *pfn, XrdCksData &cks, int mtime)
                        cur_checksum_name.begin(), ::toupper);
         if (cur_checksum_name == checksum_name)
         {
-            if (!strcmp(iter->second.c_str(), &checksum_value[0]))
+            if (!strcmp(iter->second.c_str(), checksum_value.data()))
             {
                 changed_value = false;
             }
             else
             {
-                iter->second = &checksum_value[0];
+                iter->second = checksum_value.data();
             }
             overwrote_value = true;
         }
@@ -373,7 +373,7 @@ ChecksumManager::Set(const char *pfn, XrdCksData &cks, int mtime)
     {
         ChecksumValue value;
         value.first = checksum_name;
-        value.second = &checksum_value[0];
+        value.second = checksum_value.data();
         values.push_back(value);
     }
     if (!changed_value)

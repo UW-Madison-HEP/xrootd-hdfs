@@ -81,7 +81,7 @@ human_readable_evp(const unsigned char *evp, size_t length)
     std::string result; result.reserve(length*2);
     for (idx = 0; idx < length; idx++)
     {
-        char encoded[3];
+        char encoded[20]; // Only need 3, but add extra for safety.
         sprintf(encoded, "%02x", evp[idx]);
         result += encoded;
     }
@@ -368,8 +368,7 @@ ChecksumManager::Calc(const char *pfn, XrdCksData &cks, int do_set)
     ChecksumState state(digests);
 
     const static int buffer_size = 256*1024;
-    std::vector<unsigned char> read_buffer;
-    read_buffer.reserve(buffer_size);
+    unsigned char read_buffer[buffer_size];
 
     int retval = 0;
     off_t offset = 0;
@@ -377,13 +376,13 @@ ChecksumManager::Calc(const char *pfn, XrdCksData &cks, int do_set)
     {
         do
         {
-            retval = fh->Read(&read_buffer[0], offset, buffer_size);
+            retval = fh->Read(read_buffer, offset, buffer_size);
         }
         while (retval == -EINTR);
 
         if (retval > 0)
         {
-            state.Update(&read_buffer[0], retval);
+            state.Update(read_buffer, retval);
             offset += retval;
         }
     }
