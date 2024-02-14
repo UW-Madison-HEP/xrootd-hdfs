@@ -1,5 +1,4 @@
-
-cmake_minimum_required( VERSION 2.6 )
+cmake_minimum_required( VERSION 2.8 )
 project( xrootd-hdfs )
 
 set( CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake )
@@ -7,7 +6,7 @@ set( CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake )
 find_package( Xrootd REQUIRED )
 find_package( Hdfs REQUIRED )
 find_package( Jvm REQUIRED )
-find_package( Dl REQUIRED )
+find_package( dl REQUIRED )
 
 if(NOT XROOTD_PLUGIN_VERSION)
   find_program(XROOTD_CONFIG_EXECUTABLE xrootd-config)
