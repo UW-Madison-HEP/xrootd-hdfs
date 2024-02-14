@@ -26,8 +26,7 @@ Requires: xrootd-server >= 1:%{xrootd_current_major}.%{xrootd_current_minor}
 Requires: xrootd-server <  1:%{xrootd_next_major}.0.0-1
 BuildRequires: cmake
 BuildRequires: /usr/include/hdfs.h
-BuildRequires: java-devel >= 1:1.8.0
-BuildRequires: java-devel < 1:1.8.999
+BuildRequires: java-11-devel
 BuildRequires: jpackage-utils
 BuildRequires: openssl-devel
 BuildRequires: zlib-devel
