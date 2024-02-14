@@ -1,6 +1,6 @@
 Name: xrootd-hdfs
 Version: 2.3.0
-Release: 1%{?dist}
+Release: 3%{?dist}
 Summary: HDFS plugin for xrootd
 
 Group: System Environment/Development
@@ -82,6 +82,16 @@ rm $RPM_BUILD_ROOT%{_bindir}/xrootd_hdfs_envcheck
 %{_includedir}/XrdHdfs.hh
 
 %changelog
+* Wed Feb 14 2024 Chad Seys <cwseys@physics.wisc.edu> - 2.3.0-3
+- new location of libjvm.so for java-11 in EL8/9
+- use new cmake macros as indicated by
+  https://src.fedoraproject.org/rpms/conky/c/91d2bb5b96ad54446f33578535c466e1086333b9
+  and https://fedoraproject.org/wiki/Changes/CMake_to_do_out-of-source_builds
+
+* Wed Feb 14 2024 Chad Seys <cwseys@physics.wisc.edu> - 2.3.0-2
+- build require java-11-devel
+- explicitly require java-11.  It's available in EL7/8/9.
+
 * Thu Feb 01 2024 Chad Seys <cwseys@physics.wisc.edu> - 2.3.0-1
 - Fix runtime errors due to changing C/C++ compiler behavior. Thanks to Carl Vuosalo and Dan Bradley
 - Bump xrootd version to 5.6.
