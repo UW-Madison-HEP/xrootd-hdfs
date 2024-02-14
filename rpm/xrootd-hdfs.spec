@@ -50,10 +50,10 @@ Group: System Environment/Development
 %build
 sed -i 's|@devel@|%{version}|' src/XrdHdfs.cc
 %cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo .
-make VERBOSE=1 %{?_smp_mflags}
+%cmake_build
 
 %install
-make install DESTDIR=$RPM_BUILD_ROOT
+%cmake_install
 
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/xrootd
 sed -e "s#@LIBDIR@#%{_libdir}#" rpm/xrootd.sample.hdfs.cfg.in > $RPM_BUILD_ROOT%{_sysconfdir}/xrootd/xrootd.sample.hdfs.cfg
