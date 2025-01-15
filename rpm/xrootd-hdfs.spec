@@ -1,6 +1,6 @@
 Name: xrootd-hdfs
-Version: 2.2.2
-Release: 1%{?dist}
+Version: 2.3.0
+Release: 3%{?dist}
 Summary: HDFS plugin for xrootd
 
 Group: System Environment/Development
@@ -9,23 +9,29 @@ URL: https://github.com/UW-Madison-HEP/xrootd-hdfs
 Source0: %{name}-%{version}.tar.gz
 
 %define xrootd_current_major 5
-%define xrootd_current_minor 5
+%define xrootd_current_minor 6
 %define xrootd_next_major 6
 
 BuildRequires: xrootd-server-devel >= 1:%{xrootd_current_major}
 BuildRequires: xrootd-server-devel <  1:%{xrootd_next_major}
 BuildRequires: xrootd-devel >= 1:%{xrootd_current_major}
 BuildRequires: xrootd-devel <  1:%{xrootd_next_major}
+Requires: xrootd-server >= 1:%{xrootd_current_major}.%{xrootd_current_minor}
+Requires: xrootd-server <  1:%{xrootd_next_major}.0.0-1
+BuildRequires: xrootd-server-devel >= 1:%{xrootd_current_major}
+BuildRequires: xrootd-server-devel <  1:%{xrootd_next_major}
+BuildRequires: xrootd-devel >= 1:%{xrootd_current_major}
+BuildRequires: xrootd-devel <  1:%{xrootd_next_major}
+Requires: xrootd-server >= 1:%{xrootd_current_major}.%{xrootd_current_minor}
+Requires: xrootd-server <  1:%{xrootd_next_major}.0.0-1
 BuildRequires: cmake
 BuildRequires: /usr/include/hdfs.h
-BuildRequires: java-devel = 1:1.8.0
+BuildRequires: java-11-devel
 BuildRequires: jpackage-utils
 BuildRequires: openssl-devel
 BuildRequires: zlib-devel
-Requires: hadoop-libhdfs >= 3.3.4
+Requires: hadoop-libhdfs >= 3.3.0
 Requires: hadoop-libhdfs < 3.4.0
-Requires: xrootd-server >= 1:%{xrootd_current_major}.%{xrootd_current_minor}
-Requires: xrootd-server <  1:%{xrootd_next_major}.0.0-1
 
 %package devel
 Summary: Development headers for Xrootd HDFS plugin
@@ -43,10 +49,10 @@ Group: System Environment/Development
 %build
 sed -i 's|@devel@|%{version}|' src/XrdHdfs.cc
 %cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo .
-make VERBOSE=1 %{?_smp_mflags}
+%cmake_build
 
 %install
-make install DESTDIR=$RPM_BUILD_ROOT
+%cmake_install
 
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/xrootd
 sed -e "s#@LIBDIR@#%{_libdir}#" rpm/xrootd.sample.hdfs.cfg.in > $RPM_BUILD_ROOT%{_sysconfdir}/xrootd/xrootd.sample.hdfs.cfg
@@ -65,7 +71,7 @@ rm $RPM_BUILD_ROOT%{_bindir}/xrootd_hdfs_envcheck
 %files
 %defattr(-,root,root,-)
 %{_libdir}/libXrdHdfs-*.so
-%{_libdir}/libXrdHdfs-*.so.*
+%{_libdir}/libXrdHdfs-*.so*
 %{_libdir}/libXrdHdfsReal-*.so
 %{_sysconfdir}/xrootd/xrootd.sample.hdfs.cfg
 %{_libexecdir}/xrootd-hdfs/xrootd_hdfs_envcheck
@@ -76,6 +82,22 @@ rm $RPM_BUILD_ROOT%{_bindir}/xrootd_hdfs_envcheck
 %{_includedir}/XrdHdfs.hh
 
 %changelog
+* Wed Feb 14 2024 Chad Seys <cwseys@physics.wisc.edu> - 2.3.0-3
+- new location of libjvm.so for java-11 in EL8/9
+- use new cmake macros as indicated by
+  https://src.fedoraproject.org/rpms/conky/c/91d2bb5b96ad54446f33578535c466e1086333b9
+  and https://fedoraproject.org/wiki/Changes/CMake_to_do_out-of-source_builds
+
+* Wed Feb 14 2024 Chad Seys <cwseys@physics.wisc.edu> - 2.3.0-2
+- build require java-11-devel
+- explicitly require java-11.  It's available in EL7/8/9.
+
+* Thu Feb 01 2024 Chad Seys <cwseys@physics.wisc.edu> - 2.3.0-1
+- Fix runtime errors due to changing C/C++ compiler behavior. Thanks to Carl Vuosalo and Dan Bradley
+- Bump xrootd version to 5.6.
+- Improve java version build depends
+- make libXrdHdfs globbing compatible with EL8
+
 * Tue Feb 28 2023 Carl Vuosalo <covuosalo@wisc.edu> - 2.2.1
 - Find correct user name when token is used.
 - Advertize that AIO is not supported.

@@ -60,10 +60,9 @@ ChecksumManager::GetFileContents(const char *pfn, std::string &result) const
         return rc;
     }
 
-    std::vector<char> read_buffer;
     std::stringstream ss;
     const int buffer_size = 4096;
-    read_buffer.reserve(buffer_size);
+    char read_buffer[buffer_size];
 
     int retval = 0;
     off_t offset = 0;
@@ -71,14 +70,14 @@ ChecksumManager::GetFileContents(const char *pfn, std::string &result) const
     {
         do
         {
-            retval = checksum_file->Read(&read_buffer[0], offset, buffer_size-1);
+            retval = checksum_file->Read(read_buffer, offset, buffer_size-1);
         }
         while (retval == -EINTR);
 
         if (retval > 0)
         {
             read_buffer[retval] = '\0';
-            ss << &read_buffer[0];
+            ss << read_buffer;
             offset += retval;
         }
     }
@@ -101,19 +100,19 @@ int
 ChecksumManager::Parse(const std::string &checksum_contents, ChecksumValues &result)
 {
     const char *ptr = checksum_contents.c_str();
-    std::vector<char> checksum_buffer;
-    checksum_buffer.reserve(checksum_contents.size()+1);
+    std::vector<char> checksum_buffer(checksum_contents.size() + 1);
+    char *const buffer_ptr = checksum_buffer.data();
     unsigned int length = 0;
     std::string cksum_value;
 
-    while (sscanf(ptr, "%s%n", &checksum_buffer[0], &length))
+    while (sscanf(ptr, "%s%n", buffer_ptr, &length) > 0)
     {
-        if (strlen(&checksum_buffer[0]) < 2)
+        if (strlen(buffer_ptr) < 2)
         {
             m_log.Emsg("Parse", "Too-short entry for checksum");
             return -EIO;
         }
-        char *val = strchr(&checksum_buffer[0], ':');
+        char *val = strchr(buffer_ptr, ':');
         if (val == NULL)
         {
             m_log.Emsg("Parse", "Invalid format of checksum entry.");
@@ -127,7 +126,7 @@ ChecksumManager::Parse(const std::string &checksum_contents, ChecksumValues &res
             return -EIO;
         }
         ChecksumValue digest_and_val;
-        digest_and_val.first = &checksum_buffer[0];
+        digest_and_val.first = buffer_ptr;
         digest_and_val.second = val;
         result.push_back(digest_and_val);
 
@@ -345,8 +344,8 @@ ChecksumManager::Set(const char *pfn, XrdCksData &cks, int mtime)
 
     std::string checksum_name(cks.Name);
     std::transform(checksum_name.begin(), checksum_name.end(), checksum_name.begin(), ::toupper);
-    std::vector<char> checksum_value; checksum_value.reserve(cks.Length*2 + 1);
-    cks.Get(&checksum_value[0], cks.Length*2 + 1);
+    std::vector<char> checksum_value(cks.Length*2 + 1);
+    cks.Get(checksum_value.data(), cks.Length*2 + 1);
     bool overwrote_value = false;
     bool changed_value = true;
 
@@ -359,13 +358,13 @@ ChecksumManager::Set(const char *pfn, XrdCksData &cks, int mtime)
                        cur_checksum_name.begin(), ::toupper);
         if (cur_checksum_name == checksum_name)
         {
-            if (!strcmp(iter->second.c_str(), &checksum_value[0]))
+            if (!strcmp(iter->second.c_str(), checksum_value.data()))
             {
                 changed_value = false;
             }
             else
             {
-                iter->second = &checksum_value[0];
+                iter->second = checksum_value.data();
             }
             overwrote_value = true;
         }
@@ -374,7 +373,7 @@ ChecksumManager::Set(const char *pfn, XrdCksData &cks, int mtime)
     {
         ChecksumValue value;
         value.first = checksum_name;
-        value.second = &checksum_value[0];
+        value.second = checksum_value.data();
         values.push_back(value);
     }
     if (!changed_value)

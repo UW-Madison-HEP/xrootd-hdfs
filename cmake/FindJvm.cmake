@@ -24,7 +24,8 @@ FIND_LIBRARY(JVM_LIB jvm
   /usr
   /usr/java/default/jre
   /usr/lib/jvm/java/jre
-  PATH_SUFFIXES lib lib/amd64/server  lib/i386/server
+  /usr/lib/jvm/jre
+  PATH_SUFFIXES lib lib/amd64/server lib/i386/server lib/server
 )
 
 GET_FILENAME_COMPONENT(JVM_LIB_DIR ${JVM_LIB} PATH)
