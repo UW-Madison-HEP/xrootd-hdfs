@@ -1,6 +1,6 @@
 Name: xrootd-hdfs
-Version: 2.3.0
-Release: 3%{?dist}
+Version: 2.3.1
+Release: 1%{?dist}
 Summary: HDFS plugin for xrootd
 
 Group: System Environment/Development
@@ -82,6 +82,9 @@ rm $RPM_BUILD_ROOT%{_bindir}/xrootd_hdfs_envcheck
 %{_includedir}/XrdHdfs.hh
 
 %changelog
+* Fri Feb 07 2025 Carl Vuosalo <covuosalo@wisc.edu> - 2.3.1-1
+- Fix user name bug that caused gfal-rename to fail.
+
 * Wed Feb 14 2024 Chad Seys <cwseys@physics.wisc.edu> - 2.3.0-3
 - new location of libjvm.so for java-11 in EL8/9
 - use new cmake macros as indicated by
