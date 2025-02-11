@@ -90,7 +90,10 @@ ExtractAuthName(const XrdOucEnv *client)
     if (client && (sec = client->secEnv()))
     {
         std::string username;
-        return sec->eaAPI->Get("request.name", username) ? username : (sec->name ? sec->name : "nobody");
+        if (sec->eaAPI->Get("request.name", username) && username.length() > 1)
+	// Ensure username is not blank.
+           return username;
+        return sec->name ? sec->name : "nobody";
     }
     else
     {
