@@ -1,0 +1,4 @@
+Release Notes
+
+v2.3.1-1 -- 11-Feb-2025
+gfal-rename and other commands to support moving or renaming files are now supported.
