@@ -1,5 +1,5 @@
 Name: xrootd-hdfs
-Version: 2.3.1
+Version: 2.3.2
 Release: 1%{?dist}
 Summary: HDFS plugin for xrootd
 
@@ -9,8 +9,8 @@ URL: https://github.com/UW-Madison-HEP/xrootd-hdfs
 Source0: %{name}-%{version}.tar.gz
 
 %define xrootd_current_major 5
-%define xrootd_current_minor 6
-%define xrootd_next_major 6
+%define xrootd_current_minor 9
+%define xrootd_next_major 7
 
 BuildRequires: xrootd-server-devel >= 1:%{xrootd_current_major}
 BuildRequires: xrootd-server-devel <  1:%{xrootd_next_major}
