@@ -60,6 +60,9 @@ sed -e "s#@LIBDIR@#%{_libdir}#" rpm/xrootd.sample.hdfs.cfg.in > $RPM_BUILD_ROOT%
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig
 install -m 0644 rpm/xrootd-hdfs.sysconfig $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/xrootd-hdfs
 
+mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/systemd/system/xrootd@.service.d
+install -m 0644 rpm/enable-memory-write-execute.conf $RPM_BUILD_ROOT%{_sysconfdir}/systemd/system/xrootd@.service.d/enable-memory-write-execute.conf
+
 mkdir -p $RPM_BUILD_ROOT%{_libexecdir}/xrootd-hdfs
 install -m 0755 $RPM_BUILD_ROOT%{_bindir}/xrootd_hdfs_envcheck $RPM_BUILD_ROOT%{_libexecdir}/xrootd-hdfs
 rm $RPM_BUILD_ROOT%{_bindir}/xrootd_hdfs_envcheck
@@ -76,12 +79,16 @@ rm $RPM_BUILD_ROOT%{_bindir}/xrootd_hdfs_envcheck
 %{_sysconfdir}/xrootd/xrootd.sample.hdfs.cfg
 %{_libexecdir}/xrootd-hdfs/xrootd_hdfs_envcheck
 %config(noreplace) %{_sysconfdir}/sysconfig/xrootd-hdfs
+%config %{_sysconfdir}/systemd/system/xrootd@.service.d/enable-memory-write-execute.conf
 %config %{_sysconfdir}/xrootd/config.d/40-xrootd-hdfs.cfg
 
 %files devel
 %{_includedir}/XrdHdfs.hh
 
 %changelog
+* Mon Aug 24 2026 Carl Vuosalo <covuosalo@wisc.edu> - 2.3.2-1
+- Add support for XRootD 6.
+
 * Fri Feb 07 2025 Carl Vuosalo <covuosalo@wisc.edu> - 2.3.1-1
 - Fix user name bug that caused gfal-rename to fail.
 
